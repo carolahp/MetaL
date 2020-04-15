@@ -6,7 +6,7 @@ Class {
 		'pbRepository',
 		'builder'
 	],
-	#category : #PharoBootstrapGeneric
+	#category : #'PharoBootstrapGeneric-core'
 }
 
 { #category : #'instance creation' }
@@ -44,7 +44,7 @@ PBBootstrapGeneric >> initializeBuilder [
 	"builder versionInfo: versionInfo.
 	builder imageFileReference: imageReference."
 	builder systemDefinition: self environment.
-	builder espellBackend instanceVariableMapping: self environment instanceVariableMapping
+	
 ]
 
 { #category : #'bootstrap1-stubs' }
