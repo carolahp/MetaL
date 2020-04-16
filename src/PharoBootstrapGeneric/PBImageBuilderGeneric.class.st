@@ -6,11 +6,10 @@ Class {
 		'espellBackend',
 		'bootstrapEnvironment',
 		'objectSpace',
-		'classLoader',
 		'bootstrapInterpreter',
 		'debuggerInterpreter',
-		'nextOrdinaryClassIndex',
-		'freeListsOop'
+		'freeListsOop',
+		'classLoader'
 	],
 	#category : #'PharoBootstrapGeneric-builders'
 }
@@ -88,13 +87,36 @@ PBImageBuilderGeneric >> allocateFreeLists [
 	self objectMemory initializeFreeSpacePostLoad: freeListsOop.
 ]
 
+{ #category : #'accessing-constants' }
+PBImageBuilderGeneric >> arrayClassIndex [
+	
+	^ self objectMemory arrayClassIndexPun
+]
+
+{ #category : #accessing }
+PBImageBuilderGeneric >> bootstrapEnvironment [
+	^ bootstrapEnvironment
+]
+
+{ #category : #'accessing-environment' }
+PBImageBuilderGeneric >> bootstrapEnvironmentAt: aString [ 
+	^ self bootstrapEnvironment at: (self systemDefinition classWithRole: aString) name ifAbsent: [ nil ]
+]
+
+{ #category : #accessing }
+PBImageBuilderGeneric >> classLoader [
+	^ classLoader
+]
+
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createFalse [
 
 	| falseObject |
 	
-	falseObject := self createObjectStubWithFormat: (self formatOf: #False).
-
+	falseObject := self classLoader 
+		createStubInstanceOf: #False 
+		classIndex: self classLoader newClassIndex.
+	
 	objectSpace falseObject: falseObject.
 	^ objectSpace falseObject
 ]
@@ -104,24 +126,18 @@ PBImageBuilderGeneric >> createNil [
 
 	| nilObject |
 	
-	nilObject := self createObjectStubWithFormat: (self formatOf: #UndefinedObject).
+	nilObject := self classLoader 
+		createStubInstanceOf: #UndefinedObject 
+		classIndex: self classLoader newClassIndex.
 	
 	objectSpace nilObject: nilObject.
 	^ objectSpace nilObject
 ]
 
 { #category : #'bootstrap1-stubs' }
-PBImageBuilderGeneric >> createObjectStubWithFormat: format [
-	" An object's stub is an object of size 0 
-	 which saves its format and its class index  in its header"
-	| nextClassIndex newObject |
+PBImageBuilderGeneric >> createStubForClass: aString [ 
 	
-	nextClassIndex := self nextOrdinaryClassIndex.
-	newObject := (self objectSpace backend 
-		createObjectWithFormat: format 
-		withSize: 0 
-		classIndex: nextClassIndex) asClassMirror.
-	^ newObject
+	^ self classLoader createStubForClass: (self systemDefinitionAt:aString)
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -129,8 +145,10 @@ PBImageBuilderGeneric >> createTrue [
 
 	| trueObject |
 	
-	trueObject := self createObjectStubWithFormat: (self formatOf: #True).
-
+	trueObject := self classLoader 
+		createStubInstanceOf: #True 
+		classIndex: self classLoader newClassIndex.
+	
 	objectSpace trueObject: trueObject.
 	^ objectSpace trueObject
 ]
@@ -139,6 +157,7 @@ PBImageBuilderGeneric >> createTrue [
 PBImageBuilderGeneric >> createVMStubs [
 	| specialObjectsArray |
 	super trace: 'creating initial Objects needed by the VM'.
+	self halt.
 	self createNil.
 	self createFalse.
 	self createTrue.
@@ -147,16 +166,15 @@ PBImageBuilderGeneric >> createVMStubs [
 	
 	self allocateFreeLists.
 	self allocateClassTable.
-	specialObjectsArray := self objectSpace backend
-		createObjectWithFormat: Array format
-		withSize: 60
-		classIndex: self arrayClassIndex.
+	
+	specialObjectsArray := self classLoader createStubInstanceOfArrayOfSize: 60.
 	objectSpace specialObjectsArray: specialObjectsArray.
 	objectSpace nilObject: objectSpace nilObject.
 	objectSpace falseObject: objectSpace falseObject.
 	objectSpace trueObject: objectSpace trueObject.
+	self classLoader resetClassIndex.
 	objectSpace nilObject
-		setClass: (self createStubForClassWithRole: #UndefinedObject).
+		setClass: (self createStubForClass: #UndefinedObject).
 	objectSpace falseObject
 		setClass: (self createStubForClassNamed: #PCFalse).
 	objectSpace trueObject
@@ -214,15 +232,9 @@ PBImageBuilderGeneric >> espellBackend [
 	^ espellBackend 
 ]
 
-{ #category : #'bootstrap-utils-classTable' }
-PBImageBuilderGeneric >> firstOrdinaryClassIndex [
-
-	^ self objectMemory classTablePageSize
-]
-
 { #category : #'bootstrap-utils-classes' }
 PBImageBuilderGeneric >> formatOf: aClassRole [ 
-	^ (self languageDefinition classWithRole: aClassRole) format
+	^ (self systemDefinitionAt: aClassRole) format
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -241,9 +253,8 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	objectSpace symbolTable: (EPExternalSymbolTable new objectSpace: objectSpace; yourself).
 	
 
-	classLoader := PBClassLoader new.
-	classLoader createJustStubs.
-	classLoader environment: bootstrapEnvironment.
+	classLoader := PBClassLoaderGenericReflective new.
+	classLoader bootstrapEnvironment: bootstrapEnvironment.
 	classLoader builder: self.
 	
 	bootstrapInterpreter := EPASTEvaluator new.
@@ -265,15 +276,6 @@ PBImageBuilderGeneric >> languageDefinition [
 	^ languageDefinition
 ]
 
-{ #category : #'bootstrap-utils-classTable' }
-PBImageBuilderGeneric >> nextOrdinaryClassIndex [
-	| result |
-	nextOrdinaryClassIndex ifNil: [ nextOrdinaryClassIndex := self firstOrdinaryClassIndex ].
-	result := nextOrdinaryClassIndex.
-	nextOrdinaryClassIndex := nextOrdinaryClassIndex + 1.
-	^ result
-]
-
 { #category : #accessing }
 PBImageBuilderGeneric >> objectMemory [
 	
@@ -293,6 +295,11 @@ PBImageBuilderGeneric >> systemDefinition [
 { #category : #accessing }
 PBImageBuilderGeneric >> systemDefinition: aPBLanguageDefinitionPharoCandle [ 
 	languageDefinition := aPBLanguageDefinitionPharoCandle
+]
+
+{ #category : #'accessing-systemDefinition' }
+PBImageBuilderGeneric >> systemDefinitionAt: aString [ 
+	^ self systemDefinition classWithRole: aString
 ]
 
 { #category : #tests }
