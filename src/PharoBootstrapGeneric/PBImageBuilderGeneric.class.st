@@ -108,6 +108,13 @@ PBImageBuilderGeneric >> classLoader [
 	^ classLoader
 ]
 
+{ #category : #accessing }
+PBImageBuilderGeneric >> classNamed: aString [ 
+
+	^ (classLoader classNamed: aString)
+			asRemoteClassOrTraitFromEnvironment: self
+]
+
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createFalse [
 
@@ -135,9 +142,9 @@ PBImageBuilderGeneric >> createNil [
 ]
 
 { #category : #'bootstrap1-stubs' }
-PBImageBuilderGeneric >> createStubForClass: aString [ 
+PBImageBuilderGeneric >> createStubForClassNamed: aString [ 
 	
-	^ self classLoader createStubForClass: (self systemDefinitionAt:aString)
+	^ self classLoader createStubForClassNamed: aString
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -174,57 +181,56 @@ PBImageBuilderGeneric >> createVMStubs [
 	objectSpace trueObject: objectSpace trueObject.
 	self classLoader resetClassIndex.
 	objectSpace nilObject
-		setClass: (self createStubForClass: #UndefinedObject).
+		setClass: (self createStubForClassNamed: #UndefinedObject).
 	objectSpace falseObject
-		setClass: (self createStubForClassNamed: #PCFalse).
+		setClass: (self createStubForClassNamed: #False).
 	objectSpace trueObject
-		setClass: (self createStubForClassNamed: #PCTrue).
+		setClass: (self createStubForClassNamed: #True).
 	objectSpace backend
-		smallIntegerClass: (self createStubForClassNamed: #PCSmallInteger).
+		smallIntegerClass: (self createStubForClassNamed: #SmallInteger).
 	objectSpace backend
-		characterClass: (self createStubForClassNamed: #PCCharacter).
+		characterClass: (self createStubForClassNamed: #Character).
 	objectSpace backend
-		byteSymbolClass: (self createStubForClassNamed: #PCSymbol).
+		byteSymbolClass: (self createStubForClassNamed: #Symbol).
 	objectSpace backend
-		byteStringClass: (self createStubForClassNamed: #PCString).
+		byteStringClass: (self createStubForClassNamed: #String).
 	objectSpace backend
-		byteArrayClass: (self createStubForClassNamed: #PCByteArray).
+		byteArrayClass: (self createStubForClassNamed: #ByteArray).
 	objectSpace backend
-		associationClass: (self createStubForClassNamed: #PCAssociation).
+		associationClass: (self createStubForClassNamed: #Association).
 	objectSpace backend
-		arrayClass: (self createStubForClassNamed: #PCArray).
+		arrayClass: (self createStubForClassNamed: #Array).
 	objectSpace backend
 		symbolTableClass: objectSpace backend byteSymbolClass.
 	objectSpace backend
-		largeNegativeIntegerClass: (self createStubForClassNamed: #PCLargeNegativeInteger).
+		largeNegativeIntegerClass: (self createStubForClassNamed: #LargeNegativeInteger).
 	objectSpace backend
-		largePositiveIntegerClass: (self createStubForClassNamed: #PCLargePositiveInteger).
+		largePositiveIntegerClass: (self createStubForClassNamed: #LargePositiveInteger).
 	objectSpace backend
-		methodClass: (self createStubForClassNamed: #PCCompiledMethod).
+		methodClass: (self createStubForClassNamed: #CompiledMethod).
 	objectSpace backend
-		floatClass: (self createStubForClassNamed: #PCFloat).
+		floatClass: (self createStubForClassNamed: #Float).
 	objectSpace backend
-		contextClass: (self createStubForClassNamed: #PCMethodContext).
+		contextClass: (self createStubForClassNamed: #Context).
 	objectSpace backend
-		processClass: (self createStubForClassNamed: #PCProcess).
+		processClass: (self createStubForClassNamed: #Process).
 	objectSpace backend
-		blockClass: (self createStubForClassNamed: #PCBlock).
-	"objectSpace backend fullBlockClass: (self createStubForClassNamed: #PCFullBlockClosure)."
+		blockClass: (self createStubForClassNamed: #BlockClosure).
 	objectSpace backend
-		messageClass: (self createStubForClassNamed: #PCMessage).
+		messageClass: (self createStubForClassNamed: #Message).
 
 	"Point is required in the special objects array because it is used to instantiate point objects faster.
 	If we do not put it here, the VM will crash.
 	Lots of tests in kernel use it."
 	objectSpace backend
-		pointClass: (self createStubForClassNamed: #PCPoint).
+		pointClass: (self createStubForClassNamed: #Point).
 	objectSpace backend
-		processorAssociation: (self classNamed: #PCAssociation) mirror basicNew.
+		processorAssociation: (self classNamed: #Association) mirror basicNew.
 	objectSpace backend processorAssociation
 		instanceVariableAtIndex: 2
-		put: (self createStubForClassNamed: #PCProcessorScheduler) basicNew.
+		put: (self createStubForClassNamed: #ProcessorScheduler) basicNew.
 	objectSpace backend
-		specialSelectors: ((self classNamed: #PCArray) mirror basicNew: 64)
+		specialSelectors: ((self classNamed: #Array) mirror basicNew: 64)
 ]
 
 { #category : #accessing }

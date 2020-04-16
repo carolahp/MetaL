@@ -42,6 +42,13 @@ PBClassLoaderGeneric >> builder: aPBImageBuilderGeneric [
 	builder := aPBImageBuilderGeneric
 ]
 
+{ #category : #accessing }
+PBClassLoaderGeneric >> classNamed: aString [ 
+	
+	^ (self bootstrapEnvironmentAt: aString) 
+		ifNil: [ self loadClassNamed: aString ]
+]
+
 { #category : #'class-creation-stubs' }
 PBClassLoaderGeneric >> createClassStubForDefinition: aRGBehavior [
 	
@@ -64,6 +71,12 @@ PBClassLoaderGeneric >> createStubForClass: aRGBehavior [
 			self registerClass: stub named: aRGBehavior name.
 			stub ]
 		ifFalse: [ self error: 'Impossible to create class stub! The argument is not a behavior' ]
+]
+
+{ #category : #'class-creation-stubs' }
+PBClassLoaderGeneric >> createStubForClassNamed: aString [ 
+
+	^ self createStubForClass: (self systemDefinitionAt: aString)
 ]
 
 { #category : #'class-creation-stubs' }
@@ -94,6 +107,15 @@ PBClassLoaderGeneric >> initialize [
 	fullyLoaded := Dictionary new
 ]
 
+{ #category : #'creating-classes' }
+PBClassLoaderGeneric >> loadClassNamed: aString [
+	| class |
+	class := self createStubForClassNamed: aString.
+	"shouldInitializeClassPool
+		ifTrue: [ self initializeClassPool: aString ]."
+	^ class
+]
+
 { #category : #'class-creation-stubs' }
 PBClassLoaderGeneric >> metaclassClass [
 	
@@ -117,6 +139,28 @@ PBClassLoaderGeneric >> metaclassClass [
 	
 	self registerClass: theNewMetaclass named: aRGBehavior name.
 	^ theNewMetaclass
+]
+
+{ #category : #migrating }
+PBClassLoaderGeneric >> migrateOldClass: oldClass to: newClass [
+
+	| oldClassMetaclass |
+	
+	"We migrate the class pools"
+	oldClass asClassMirror classPool isNilObject ifFalse: [
+		newClass asClassMirror classPool: oldClass asClassMirror classPool ].
+	
+	"We migrate the class instance variables"
+	"A class has at least 14 instances variables (cf class description, behavior). Starting from 15, we get user defined class instances variables."
+	((newClass instanceVariableMapping classNumberOfVariables) + 1) to: oldClass fixedSize do: [ :index |
+		newClass instanceVariableAtIndex: index put: (oldClass instanceVariableAtIndex: index).
+	].
+
+	"We become the old class and metaclass into the new ones"
+	oldClassMetaclass := oldClass basicClass.
+	oldClass becomeInto: newClass.
+	oldClassMetaclass target == Metaclass
+		ifFalse:[ oldClassMetaclass becomeInto: newClass basicClass ] 
 ]
 
 { #category : #'class-creation-stubs' }
