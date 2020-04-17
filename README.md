@@ -1,6 +1,6 @@
 # PharoBootstrapGeneric
 A generic bootstrapper for Pharo like languages. 
-This is an alternative to the bootstrapper provided in the official Pharo repository.
+This is an alternative to the bootstrapper provided in the official Pharo repository, but it uses mostly the same backend.
 
 # Installation
 The next code will install the bootstrapper and its dependencies (including Espell and therefore the VMMaker).
