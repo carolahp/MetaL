@@ -12,7 +12,7 @@ The VM Simulator is huge, so it will take some time to load.
 
 ```Smalltalk
 [ Metacello new
-    baseline: 'DebuggableASTInterpreter';
+    baseline: 'PharoBootstrapGeneric';
     repository: 'github://carolahp/PharoBootstrapGeneric';
     load ] on: Warning do: #resume.
 ```
