@@ -294,6 +294,11 @@ PBImageBuilderGeneric >> objectSpace [
 ]
 
 { #category : #accessing }
+PBImageBuilderGeneric >> simulator [
+	^ objectSpace backend simulator objectMemory
+]
+
+{ #category : #accessing }
 PBImageBuilderGeneric >> systemDefinition [
 	^ languageDefinition
 ]
