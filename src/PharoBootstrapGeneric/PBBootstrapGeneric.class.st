@@ -29,6 +29,11 @@ PBBootstrapGeneric >> architecture: aString [
 ]
 
 { #category : #accessing }
+PBBootstrapGeneric >> builder [
+	^ builder
+]
+
+{ #category : #accessing }
 PBBootstrapGeneric >> environment [
 	^ self pbRepository ringEnvironment
 ]
@@ -49,11 +54,10 @@ PBBootstrapGeneric >> initializeBuilder [
 
 { #category : #'bootstrap1-stubs' }
 PBBootstrapGeneric >> installStubsAndInitialObjects [
-	builder 
-		initializeBootstrapEnvironment;
-		createVMStubs;
-		flushNewSpace;
-		createInitialObjects
+	builder initializeBootstrapEnvironment.
+	builder createVMStubs.
+	builder flushNewSpace.
+	builder createInitialObjects
 ]
 
 { #category : #accessing }
