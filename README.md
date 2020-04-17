@@ -1,10 +1,10 @@
 # PharoBootstrapGeneric
 A generic bootstrapper for Pharo like languages. 
-This is an alternative to the bootstrapper provided in the official Pharo repository, but it uses mostly the same backend.
+This is an alternative to the bootstrapper provided in the official Pharo repository, but it uses mostly the same backend originally provided by [@Guillep](https://github.com/guillep/).
 
 # Installation
-The next code will install the bootstrapper and its dependencies (including Espell and therefore the VMMaker).
-It takes time to load.
+The next code will install the bootstrapper and its dependencies (including (Espell)[https://github.com/carolahp/espell/] and therefore the [Virtual Machine Simulator libraries](https://github.com/OpenSmalltalk/opensmalltalk-vm)).
+The VM Simulator is huge, so it will take some time to load.
 ```Smalltalk
 [ Metacello new
     baseline: 'DebuggableASTInterpreter';
