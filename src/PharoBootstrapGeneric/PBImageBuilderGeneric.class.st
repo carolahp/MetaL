@@ -298,6 +298,11 @@ PBImageBuilderGeneric >> simulator [
 	^ objectSpace backend simulator objectMemory
 ]
 
+{ #category : #'accessing-environment' }
+PBImageBuilderGeneric >> spurImage [
+	^ EPSpurImage onFirstObject: espellBackend nilObject
+]
+
 { #category : #accessing }
 PBImageBuilderGeneric >> systemDefinition [
 	^ languageDefinition
