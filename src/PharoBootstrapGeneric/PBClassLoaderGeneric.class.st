@@ -42,6 +42,11 @@ PBClassLoaderGeneric >> builder: aPBImageBuilderGeneric [
 	builder := aPBImageBuilderGeneric
 ]
 
+{ #category : #'mapping-remote' }
+PBClassLoaderGeneric >> classForClassMirror: anEPClassMirror [ 
+	^ anEPClassMirror asRGClass
+]
+
 { #category : #accessing }
 PBClassLoaderGeneric >> classNamed: aString [ 
 	

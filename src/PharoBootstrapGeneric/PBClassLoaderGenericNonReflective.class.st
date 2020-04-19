@@ -33,7 +33,7 @@ PBClassLoaderGenericNonReflective >> createStubInstanceOf: aClassName classIndex
 			createObjectWithFormat: format 
 			withSize: 0 
 			classIndex: classIndex).
-	self assert: stub classIndex equals: classIndex.
+	self assert: stub classIndex = classIndex.
 	^ stub
 ]
 

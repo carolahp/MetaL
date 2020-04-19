@@ -104,6 +104,17 @@ PBImageBuilderGeneric >> bootstrapEnvironmentAt: aString [
 ]
 
 { #category : #accessing }
+PBImageBuilderGeneric >> bootstrapInterpreter [
+	^ bootstrapInterpreter
+]
+
+{ #category : #'mapping-remote' }
+PBImageBuilderGeneric >> classForClassMirror: anEPClassMirror [
+
+	^ classLoader classForClassMirror: anEPClassMirror
+]
+
+{ #category : #accessing }
 PBImageBuilderGeneric >> classLoader [
 	^ classLoader
 ]
@@ -126,6 +137,18 @@ PBImageBuilderGeneric >> createFalse [
 	
 	objectSpace falseObject: falseObject.
 	^ objectSpace falseObject
+]
+
+{ #category : #'bootstrap1-stubs' }
+PBImageBuilderGeneric >> createInitialObjects [
+	| nilObj |
+	nilObj := objectSpace nilObject.
+	" Initialize globals in the bootstrap environment "
+	(self languageDefinition globalVariables) do: [ :globalVarName |
+		self bootstrapEnvironment at: globalVarName put: nilObj.
+		self assert: (self bootstrapEnvironment at: globalVarName) = nilObj ].
+	
+	self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ].
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -231,6 +254,11 @@ PBImageBuilderGeneric >> createVMStubs [
 		put: (self createStubForClassNamed: #ProcessorScheduler) basicNew.
 	objectSpace backend
 		specialSelectors: ((self classNamed: #Array) mirror basicNew: 64)
+]
+
+{ #category : #accessing }
+PBImageBuilderGeneric >> debuggerInterpreter [
+	^ debuggerInterpreter
 ]
 
 { #category : #accessing }
@@ -369,7 +397,7 @@ PBImageBuilderGeneric >> systemDefinitionAt: aString [
 { #category : #tests }
 PBImageBuilderGeneric >> test01FirstObjectsStubs [
 	
-	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace nilObject target address) equals: (self formatOf: #UndefinedObject).
-	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace falseObject target address) equals: (self formatOf: #False).
-	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace trueObject target address) equals: (self formatOf: #True).
+	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace nilObject target address) = (self formatOf: #UndefinedObject).
+	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace falseObject target address) = (self formatOf: #False).
+	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace trueObject target address) = (self formatOf: #True).
 ]
