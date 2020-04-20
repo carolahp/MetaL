@@ -2,7 +2,6 @@ Class {
 	#name : #PBClassLoaderGeneric,
 	#superclass : #Object,
 	#instVars : [
-		'bootstrapEnvironment',
 		'builder',
 		'fullyLoaded'
 	],
@@ -19,12 +18,12 @@ PBClassLoaderGeneric >> backend [
 
 { #category : #accessing }
 PBClassLoaderGeneric >> bootstrapEnvironment [
-	^ bootstrapEnvironment
+	^ self builder bootstrapEnvironment
 ]
 
 { #category : #accessing }
 PBClassLoaderGeneric >> bootstrapEnvironment: aDictionary [ 
-	bootstrapEnvironment := aDictionary
+	self shouldNotImplement 
 ]
 
 { #category : #'accessing-memory' }
@@ -44,7 +43,7 @@ PBClassLoaderGeneric >> builder: aPBImageBuilderGeneric [
 
 { #category : #'mapping-remote' }
 PBClassLoaderGeneric >> classForClassMirror: anEPClassMirror [ 
-	^ anEPClassMirror asRGClass
+	^ [anEPClassMirror asRGClass] on: Error do: [ self systemDefinition classWithRole: #Class ]
 ]
 
 { #category : #accessing }
@@ -74,6 +73,7 @@ PBClassLoaderGeneric >> createStubForClass: aRGBehavior [
 		ifTrue: [
 			stub := self createClassStubForDefinition: aRGBehavior.
 			self registerClass: stub named: aRGBehavior name.
+			self registerClass: stub basicClass named: aRGBehavior metaclass name.
 			stub ]
 		ifFalse: [ self error: 'Impossible to create class stub! The argument is not a behavior' ]
 ]
@@ -112,6 +112,45 @@ PBClassLoaderGeneric >> initialize [
 	fullyLoaded := Dictionary new
 ]
 
+{ #category : #'initializing-classes' }
+PBClassLoaderGeneric >> initializeClassPool: aClassName [
+
+	| definition class classPool classVariableBindings |
+	definition := self systemDefinition classNamed: aClassName.
+	classVariableBindings := definition classVarNames collect: [ :each | | classVar |
+		classVar := (self classNamed: #ClassVariable) basicNew.
+		classVar instanceVariableAtIndex: (self instanceVariableMapping classVariableKeyIndex) put: (each asLiteralInObjectSpace: builder objectSpace) ].
+	
+	class := self bootstrapEnvironmentAt: aClassName.
+	classPool := builder bootstrapInterpreter
+		evaluateCode: 'aClassVariableNamesCollection asDictionary'
+		withTemps: { 
+			'aClassVariableNamesCollection' -> (builder objectSpace newArrayWithAll: classVariableBindings)
+		}.
+	
+	"Force the creation of the symbol using the object space class table." 
+	self flag: #bug. "If we do not use basicSetClassName, we duplicate symbols"
+	class basicSetClassName: (aClassName asLiteralInObjectSpace: builder objectSpace).
+	class classPool: classPool.
+	^ class
+]
+
+{ #category : #'initializing-classes' }
+PBClassLoaderGeneric >> initializeClassPools [
+
+	"shouldInitializeClassPool := true."
+	self bootstrapEnvironment keysDo: [ :name | | definition |
+			definition := self systemDefinition at: name.
+			(definition isNotNil and: [definition isBehavior and: [definition isMetaclass not]]) 
+				ifTrue: [ self initializeClassPool: definition name ]	
+		 ]
+]
+
+{ #category : #accessing }
+PBClassLoaderGeneric >> instanceVariableMapping [
+	^ builder languageDefinition instanceVariableMapping
+]
+
 { #category : #'creating-classes' }
 PBClassLoaderGeneric >> loadClassNamed: aString [
 	| class |
@@ -143,6 +182,7 @@ PBClassLoaderGeneric >> metaclassClass [
 	theNewMetaclassClass := self createStubForClassNamed: aRGBehavior metaclass name metaclassIndex: classIndex newClassIndex: metaclassIndex.
 	
 	self registerClass: theNewMetaclass named: aRGBehavior name.
+	self registerClass: theNewMetaclassClass named: aRGBehavior metaclass name.
 	^ theNewMetaclass
 ]
 
@@ -183,11 +223,9 @@ PBClassLoaderGeneric >> registerClass: aClassMirror named: aString [
 
 { #category : #'class-registration' }
 PBClassLoaderGeneric >> registerClass: aClassMirror named: aName fullyLoaded: aBoolean [
-
 	"If it existed before, we migrate its state"
 	(self bootstrapEnvironment includesKey: aName)
-		ifTrue: [ 
-			self migrateOldClass: (self bootstrapEnvironment at: aName) to: aClassMirror ].
+		ifTrue: [ self migrateOldClass: (self bootstrapEnvironment at: aName) to: aClassMirror ].
 
 	"We register it and keep up to date our compact class index"
 	self bootstrapEnvironment at: aName put: aClassMirror.
@@ -217,4 +255,9 @@ PBClassLoaderGeneric >> systemDefinition [
 { #category : #'accessing-systemDefinition' }
 PBClassLoaderGeneric >> systemDefinitionAt: aString [ 
 	^ self builder systemDefinitionAt: aString
+]
+
+{ #category : #accessing }
+PBClassLoaderGeneric >> systemDefinitionAt: aString ifAbsent: aBlockClosure [ 
+	^ [self systemDefinitionAt: aString] on: Error do: [aBlockClosure value]
 ]

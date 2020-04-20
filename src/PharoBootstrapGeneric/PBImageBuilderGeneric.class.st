@@ -93,6 +93,36 @@ PBImageBuilderGeneric >> arrayClassIndex [
 	^ self objectMemory arrayClassIndexPun
 ]
 
+{ #category : #bindings }
+PBImageBuilderGeneric >> bindingOf: aName [
+
+	([ self systemDefinition classNamed: aName ] on: Error do: [ nil ]) isNotNil
+		ifTrue: [ ^ "(objectSpace classNamed: aName) mirror asClassMirror" 
+			EPClassBinding new
+				name: aName objectSpace: self;
+				yourself ].
+	(((self systemDefinition globalVariableNamed: aName) isNotNil) or: [(self bootstrapEnvironment at: aName ifAbsent: [nil]) isNotNil])
+		ifTrue: [ ^
+			EPGlobalBinding new
+				name: aName objectSpace: self;
+				yourself ].
+	self bootstrapEnvironment do: [:class | |rgClass|
+		class isClassMirror ifTrue: [ 
+			rgClass := class asClassMirror asRGClass.
+			(rgClass classVarNames contains: [:cn | cn = aName])
+				ifTrue: [|index|
+					index := rgClass classVarNames indexOf: aName.
+					^ EPClassVariableBinding new
+						name: aName
+						ownerName: rgClass theNonMetaClass name asSymbol
+						objectSpace: self;
+						yourself ]
+			 ]
+		].
+			
+	^ nil
+]
+
 { #category : #accessing }
 PBImageBuilderGeneric >> bootstrapEnvironment [
 	^ bootstrapEnvironment
@@ -148,6 +178,8 @@ PBImageBuilderGeneric >> createInitialObjects [
 		self bootstrapEnvironment at: globalVarName put: nilObj.
 		self assert: (self bootstrapEnvironment at: globalVarName) = nilObj ].
 	
+	classLoader initializeClassPools.
+	
 	self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ].
 ]
 
@@ -187,7 +219,7 @@ PBImageBuilderGeneric >> createTrue [
 PBImageBuilderGeneric >> createVMStubs [
 	| specialObjectsArray |
 	super trace: 'creating initial Objects needed by the VM'.
-	self halt.
+	
 	self createNil.
 	self createFalse.
 	self createTrue.
@@ -318,7 +350,6 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	
 
 	classLoader := PBClassLoaderGenericReflective new.
-	classLoader bootstrapEnvironment: bootstrapEnvironment.
 	classLoader builder: self.
 	
 	bootstrapInterpreter := EPASTEvaluator new.
