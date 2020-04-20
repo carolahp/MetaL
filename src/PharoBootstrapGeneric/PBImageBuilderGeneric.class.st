@@ -156,6 +156,29 @@ PBImageBuilderGeneric >> classNamed: aString [
 			asRemoteClassOrTraitFromEnvironment: self
 ]
 
+{ #category : #'creating-classes' }
+PBImageBuilderGeneric >> createBehaviorFromDefinition: aRGBehavior [ 
+	^ self classLoader createBehaviorFromDefinition: aRGBehavior
+]
+
+{ #category : #'creating-classes' }
+PBImageBuilderGeneric >> createClasses [
+	| definitions total |
+	definitions := self systemDefinition allClassesAndTraits sorted: [ :a :b | a name < b name ].
+	total := definitions size.
+	definitions
+		withIndexDo: [ :aClassDefinition :index | | time |
+			time := [self createBehaviorFromDefinition: aClassDefinition.] timeToRun.
+			
+			PBSubStepFinishedSignal emit: ((index printPaddedWith: $0 to: 3), '/' , 
+								total asString, ' - ', 
+									time asString ,': Built behavior ', 
+										aClassDefinition name). ].
+	
+	PBStepFinishedSignal emit: 'Classes created'.
+	self checkpoint: 'created_classes'.
+]
+
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createFalse [
 

@@ -53,6 +53,27 @@ PBClassLoaderGeneric >> classNamed: aString [
 		ifNil: [ self loadClassNamed: aString ]
 ]
 
+{ #category : #'creating-classes' }
+PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
+
+	| newBehavior code |
+	(self isFullyLoadedClassNamed: aClassDefinition name) ifTrue: [ ^ self ].
+	aClassDefinition isBehavior ifTrue: [
+		"We ensure a class with that name already exists"
+		self bootstrapEnvironment at: aClassDefinition name ifAbsent: [ self createStubForClassNamed: aClassDefinition name ]].
+	
+	newBehavior := (self systemDefinition instructionInstallClass: aClassDefinition) evaluate.
+	(self systemDefinition instructionInitializeMethodDictionaryFor: newBehavior) evaluate.
+	
+	aClassDefinition isBehavior ifTrue: [ 
+		self registerClass: newBehavior asClassMirror named: aClassDefinition name fullyLoaded: true.
+	] ifFalse: [
+		self registerTrait: newBehavior asTraitMirror named: aClassDefinition name fullyLoaded: true.
+	].
+	"we register the class by hand in the Smalltalk globals"
+	(self systemDefinition instructionRegisterInstalledBehaviorInGlobals: newBehavior) evaluate
+]
+
 { #category : #'class-creation-stubs' }
 PBClassLoaderGeneric >> createClassStubForDefinition: aRGBehavior [
 	
@@ -149,6 +170,17 @@ PBClassLoaderGeneric >> initializeClassPools [
 { #category : #accessing }
 PBClassLoaderGeneric >> instanceVariableMapping [
 	^ builder languageDefinition instanceVariableMapping
+]
+
+{ #category : #testing }
+PBClassLoaderGeneric >> isClassDefinition: aString [ 
+	^ self systemDefinition isClassDefinition: aString 
+]
+
+{ #category : #testing }
+PBClassLoaderGeneric >> isFullyLoadedClassNamed: aClassName [
+
+	^ fullyLoaded at: aClassName ifAbsent: [ false ]
 ]
 
 { #category : #'creating-classes' }

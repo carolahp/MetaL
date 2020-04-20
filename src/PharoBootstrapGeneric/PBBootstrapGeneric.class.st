@@ -52,6 +52,11 @@ PBBootstrapGeneric >> initializeBuilder [
 	
 ]
 
+{ #category : #'creating-classes' }
+PBBootstrapGeneric >> installClasses [
+	builder createClasses
+]
+
 { #category : #'bootstrap1-stubs' }
 PBBootstrapGeneric >> installStubsAndInitialObjects [
 	builder initializeBootstrapEnvironment.
