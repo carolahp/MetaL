@@ -171,7 +171,7 @@ PBImageBuilderGeneric >> createFalse [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createInitialObjects [
-	| nilObj |
+	| nilObj smalltalk |
 	nilObj := objectSpace nilObject.
 	" Initialize globals in the bootstrap environment "
 	(self languageDefinition globalVariables) do: [ :globalVarName |
@@ -179,7 +179,12 @@ PBImageBuilderGeneric >> createInitialObjects [
 		self assert: (self bootstrapEnvironment at: globalVarName) = nilObj ].
 	
 	classLoader initializeClassPools.
+	smalltalk := self languageDefinition instructionNewSystemDictionary evaluate.
+	self bootstrapEnvironment at: #Smalltalk put: smalltalk.
 	
+	"self bootstrapInterpreter evaluateCode: 'Smalltalk globals at: #Smalltalk put: Smalltalk'.
+	espellBackend systemDictionary: (smalltalk instanceVariableAtIndex: 1).
+	"
 	self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ].
 ]
 
