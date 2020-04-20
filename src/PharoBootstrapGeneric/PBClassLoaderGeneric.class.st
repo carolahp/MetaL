@@ -3,7 +3,9 @@ Class {
 	#superclass : #Object,
 	#instVars : [
 		'builder',
-		'fullyLoaded'
+		'fullyLoaded',
+		'mirrorDefinitionMap',
+		'definitionMirrorMap'
 	],
 	#classVars : [
 		'nextClassIndex'
@@ -43,7 +45,8 @@ PBClassLoaderGeneric >> builder: aPBImageBuilderGeneric [
 
 { #category : #'mapping-remote' }
 PBClassLoaderGeneric >> classForClassMirror: anEPClassMirror [ 
-	^ [anEPClassMirror asRGClass] on: Error do: [ self systemDefinition classWithRole: #Class ]
+	
+	^ self mirrorDefinitionMap at: anEPClassMirror ifAbsent: [ self systemDefinitionAt: #Class ]
 ]
 
 { #category : #accessing }
@@ -94,7 +97,7 @@ PBClassLoaderGeneric >> createStubForClass: aRGBehavior [
 		ifTrue: [
 			stub := self createClassStubForDefinition: aRGBehavior.
 			self registerClass: stub named: aRGBehavior name.
-			self registerClass: stub basicClass named: aRGBehavior metaclass name.
+			
 			stub ]
 		ifFalse: [ self error: 'Impossible to create class stub! The argument is not a behavior' ]
 ]
@@ -126,10 +129,11 @@ PBClassLoaderGeneric >> fullyLoaded [
 	^ fullyLoaded
 ]
 
-{ #category : #accessing }
+{ #category : #initialization }
 PBClassLoaderGeneric >> initialize [
-
-	super initialize.	
+	super initialize.
+	mirrorDefinitionMap := EPDictionary new.
+	definitionMirrorMap := EPDictionary new.
 	fullyLoaded := Dictionary new
 ]
 
@@ -192,6 +196,30 @@ PBClassLoaderGeneric >> loadClassNamed: aString [
 	^ class
 ]
 
+{ #category : #'class-registration' }
+PBClassLoaderGeneric >> map: aClassMirror with: aDefinition [
+
+	"We create a mapping between the real classes and their definitions for later"
+	
+	| classSideMirror |
+	self assert: (aClassMirror target isKindOf: EPSimulatorHandle).
+	(aClassMirror backend simulator objectMemory classTableRootObj) ifNotNil: [
+		self assert: aClassMirror target asClassIndexHandle address notNil.
+		aClassMirror target: (aClassMirror target asClassIndexHandle) ].
+
+	mirrorDefinitionMap at: aClassMirror put: aDefinition.
+	definitionMirrorMap at: aDefinition put: aClassMirror.
+
+	classSideMirror := aClassMirror basicClass.
+	"only valid for Spur simulator bootstrap by now"
+	(aClassMirror backend simulator objectMemory classTableRootObj) ifNotNil: [
+		self assert: classSideMirror target asClassIndexHandle address notNil.
+		classSideMirror target: (classSideMirror target asClassIndexHandle) ].
+	
+	mirrorDefinitionMap at: classSideMirror put: aDefinition classSide.
+	definitionMirrorMap at: aDefinition classSide put: classSideMirror.
+]
+
 { #category : #'class-creation-stubs' }
 PBClassLoaderGeneric >> metaclassClass [
 	
@@ -214,7 +242,7 @@ PBClassLoaderGeneric >> metaclassClass [
 	theNewMetaclassClass := self createStubForClassNamed: aRGBehavior metaclass name metaclassIndex: classIndex newClassIndex: metaclassIndex.
 	
 	self registerClass: theNewMetaclass named: aRGBehavior name.
-	self registerClass: theNewMetaclassClass named: aRGBehavior metaclass name.
+
 	^ theNewMetaclass
 ]
 
@@ -240,6 +268,11 @@ PBClassLoaderGeneric >> migrateOldClass: oldClass to: newClass [
 		ifFalse:[ oldClassMetaclass becomeInto: newClass basicClass ] 
 ]
 
+{ #category : #'accessing-private' }
+PBClassLoaderGeneric >> mirrorDefinitionMap [
+	^ mirrorDefinitionMap
+]
+
 { #category : #'class-creation-stubs' }
 PBClassLoaderGeneric >> newClassIndex [
 	"The first page of the class table contains special classes, so we start in the second page"
@@ -254,24 +287,33 @@ PBClassLoaderGeneric >> registerClass: aClassMirror named: aString [
 ]
 
 { #category : #'class-registration' }
-PBClassLoaderGeneric >> registerClass: aClassMirror named: aName fullyLoaded: aBoolean [
+PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded: aBoolean [
+
+	| definition metaclassName |
+	definition := self systemDefinition classNamed: className.
+	metaclassName := definition classSide name.
+	
 	"If it existed before, we migrate its state"
-	(self bootstrapEnvironment includesKey: aName)
-		ifTrue: [ self migrateOldClass: (self bootstrapEnvironment at: aName) to: aClassMirror ].
+	(self bootstrapEnvironment includesKey: className)
+		ifTrue: [ self migrateOldClass: (self bootstrapEnvironment at: className) to: aClassMirror ].
 
 	"We register it and keep up to date our compact class index"
-	self bootstrapEnvironment at: aName put: aClassMirror.
-	"self bootstrapEnvironment at: (aName,' class') asByteString put: aClassMirror basicClass."
+	self bootstrapEnvironment at: className put: aClassMirror.
+	self bootstrapEnvironment at: metaclassName put: aClassMirror basicClass.
 	
 	aClassMirror asClassMirror compactClassIndex = 0 ifFalse: [ 
 		builder objectSpace backend compactClassAt: aClassMirror asClassMirror compactClassIndex put: aClassMirror ].
 	
+	"We create a mapping between the real classes and their definitions for later"
+	self map: aClassMirror with: definition.
+	
 	"We say the simulator that this class is a root, possible becomes can come into it. THIS IS ONLY VALID FOR SPUR SIMULATOR BOOTSTRAP. REFACTOR ME".
 	self flag: #refactorMe.
 	builder objectSpace backend addExtraRoot: aClassMirror.
+	builder objectSpace backend addExtraRoot: aClassMirror classSide.
 	
 	"We reset the class map of the ast interpreter"
-	self fullyLoaded at: aName put: aBoolean
+	self fullyLoaded at: className put: aBoolean
 ]
 
 { #category : #'class-creation-stubs' }

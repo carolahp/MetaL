@@ -97,8 +97,8 @@ PBImageBuilderGeneric >> arrayClassIndex [
 PBImageBuilderGeneric >> bindingOf: aName [
 
 	([ self systemDefinition classNamed: aName ] on: Error do: [ nil ]) isNotNil
-		ifTrue: [ ^ "(objectSpace classNamed: aName) mirror asClassMirror" 
-			EPClassBinding new
+		ifTrue: [  "(objectSpace classNamed: aName) mirror asClassMirror" 
+			^ EPClassBinding new
 				name: aName objectSpace: self;
 				yourself ].
 	(((self systemDefinition globalVariableNamed: aName) isNotNil) or: [(self bootstrapEnvironment at: aName ifAbsent: [nil]) isNotNil])
@@ -175,8 +175,7 @@ PBImageBuilderGeneric >> createClasses [
 									time asString ,': Built behavior ', 
 										aClassDefinition name). ].
 	
-	PBStepFinishedSignal emit: 'Classes created'.
-	self checkpoint: 'created_classes'.
+	PBStepFinishedSignal emit: 'Classes created'
 ]
 
 { #category : #'bootstrap1-stubs' }
