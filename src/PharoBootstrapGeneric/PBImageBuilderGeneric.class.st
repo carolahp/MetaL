@@ -144,7 +144,7 @@ PBImageBuilderGeneric >> bootstrapInterpreter [
 	^ bootstrapInterpreter
 ]
 
-{ #category : #'mapping-remote' }
+{ #category : #'mapping-mirrors-definitions' }
 PBImageBuilderGeneric >> classForClassMirror: anEPClassMirror [
 
 	^ classLoader classForClassMirror: anEPClassMirror
@@ -387,7 +387,7 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	objectSpace symbolTable: (EPExternalSymbolTable new objectSpace: objectSpace; yourself).
 	
 
-	classLoader := PBClassLoaderGenericNonReflective new.
+	classLoader := PBClassLoaderGeneric new.
 	classLoader builder: self.
 	
 	bootstrapInterpreter := EPASTEvaluator new.
@@ -507,7 +507,12 @@ PBImageBuilderGeneric >> systemDefinition: aPBLanguageDefinitionPharoCandle [
 
 { #category : #'accessing-systemDefinition' }
 PBImageBuilderGeneric >> systemDefinitionAt: aString [ 
-	^ self systemDefinition classWithRole: aString
+	^ self systemDefinitionAt: aString ifAbsent: [:evt | evt defaultAction] 
+]
+
+{ #category : #'accessing-systemDefinition' }
+PBImageBuilderGeneric >> systemDefinitionAt: aString ifAbsent: aBlockClosure [ 
+	^ [ self systemDefinition classWithRole: aString ] on: PBClassDefinitionNotFound do: aBlockClosure
 ]
 
 { #category : #tests }

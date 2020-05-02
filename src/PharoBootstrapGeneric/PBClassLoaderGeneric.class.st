@@ -28,7 +28,7 @@ PBClassLoaderGeneric >> bootstrapEnvironment: aDictionary [
 	self shouldNotImplement 
 ]
 
-{ #category : #'accessing-memory' }
+{ #category : #'accessing-installedClasses' }
 PBClassLoaderGeneric >> bootstrapEnvironmentAt: aString [ 
 	^ self builder bootstrapEnvironmentAt: aString
 ]
@@ -43,20 +43,20 @@ PBClassLoaderGeneric >> builder: aPBImageBuilderGeneric [
 	builder := aPBImageBuilderGeneric
 ]
 
-{ #category : #'mapping-remote' }
+{ #category : #'mapping-mirrors-definitions' }
 PBClassLoaderGeneric >> classForClassMirror: anEPClassMirror [ 
 	
 	^ self mirrorDefinitionMap at: anEPClassMirror ifAbsent: [ self systemDefinitionAt: #Class ]
 ]
 
-{ #category : #accessing }
+{ #category : #'accessing-installedClasses' }
 PBClassLoaderGeneric >> classNamed: aString [ 
 	
 	^ (self bootstrapEnvironmentAt: aString) 
 		ifNil: [ self loadClassNamed: aString ]
 ]
 
-{ #category : #'creating-classes' }
+{ #category : #'class-creation' }
 PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 
 	| newBehavior code |
@@ -108,23 +108,48 @@ PBClassLoaderGeneric >> createStubForClassNamed: aString [
 	^ self createStubForClass: (self systemDefinitionAt: aString)
 ]
 
-{ #category : #'class-creation-stubs' }
+{ #category : #'instance-creation-stubs' }
 PBClassLoaderGeneric >> createStubForClassNamed: aString metaclassIndex: anInteger newClassIndex: anotherInteger [
-	" The way to install a stub depends on wether or not we are using reflective operations "
-	self subclassResponsibility 
+	" We install by hand (non reflectively) a stub that represents a class using as template its definition in the ring model (language definition) " 
+	| stub classDef metaclassIndex newClassIndex |
+	classDef := self systemDefinitionAt: aString.
+	metaclassIndex := anInteger.
+	newClassIndex := anotherInteger.
+	" First we create a zero sized stub object that represents the class.
+	We do so by creating an instance of its metaclass "
+	stub := (self createStubInstanceOf: classDef metaclass name classIndex: metaclassIndex) asClassMirror.
+	" Then we set its format (this is saved in the third instance variable of classes)"
+	stub format: classDef format.
+	" Finally we set its identity hash. A class identityHash is its index "
+	stub setHashBitsTo: newClassIndex.
+	self registerClassInClassTable: stub atIndex: newClassIndex.
+	
+	^ stub
 ]
 
-{ #category : #stubs }
+{ #category : #'instance-creation-stubs' }
 PBClassLoaderGeneric >> createStubInstanceOf: aClassName classIndex: anInteger [
-	self subclassResponsibility 
+	" A basic stub is an object of size 0 and its class index saved in its header "
+	| format stub classIndex |
+	format := (self systemDefinition classWithRole: aClassName) format.
+	classIndex := anInteger.
+	stub := (self backend
+			createObjectWithFormat: format 
+			withSize: 0 
+			classIndex: classIndex).
+	self assert: stub classIndex = classIndex.
+	^ stub
 ]
 
-{ #category : #stubs }
+{ #category : #'instance-creation-stubs' }
 PBClassLoaderGeneric >> createStubInstanceOfArrayOfSize: anInteger [ 
-	self subclassResponsibility 
+	^ self backend
+			createObjectWithFormat: (self systemDefinitionAt: #Array) format 
+			withSize: 60
+			classIndex: self builder arrayClassIndex.
 ]
 
-{ #category : #'accessing-private' }
+{ #category : #testing }
 PBClassLoaderGeneric >> fullyLoaded [
 	^ fullyLoaded
 ]
@@ -187,7 +212,7 @@ PBClassLoaderGeneric >> isFullyLoadedClassNamed: aClassName [
 	^ fullyLoaded at: aClassName ifAbsent: [ false ]
 ]
 
-{ #category : #'creating-classes' }
+{ #category : #'class-creation' }
 PBClassLoaderGeneric >> loadClassNamed: aString [
 	| class |
 	class := self createStubForClassNamed: aString.
@@ -268,7 +293,7 @@ PBClassLoaderGeneric >> migrateOldClass: oldClass to: newClass [
 		ifFalse:[ oldClassMetaclass becomeInto: newClass basicClass ] 
 ]
 
-{ #category : #'accessing-private' }
+{ #category : #'mapping-mirrors-definitions' }
 PBClassLoaderGeneric >> mirrorDefinitionMap [
 	^ mirrorDefinitionMap
 ]
@@ -316,6 +341,12 @@ PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded
 	self fullyLoaded at: className put: aBoolean
 ]
 
+{ #category : #'class-registration' }
+PBClassLoaderGeneric >> registerClassInClassTable: aClassMirror atIndex: anInteger [ 
+	self builder objectSpace backend objectMemory classAtIndex: anInteger put: aClassMirror target address.	
+	
+]
+
 { #category : #'class-creation-stubs' }
 PBClassLoaderGeneric >> resetClassIndex [
 	nextClassIndex := nil
@@ -326,12 +357,12 @@ PBClassLoaderGeneric >> systemDefinition [
 	^ self builder systemDefinition
 ]
 
-{ #category : #'accessing-systemDefinition' }
+{ #category : #'accessing-classesDefinitions' }
 PBClassLoaderGeneric >> systemDefinitionAt: aString [ 
-	^ self builder systemDefinitionAt: aString
+	^ self builder systemDefinitionAt: aString ifAbsent: [ nil ]
 ]
 
-{ #category : #accessing }
+{ #category : #'accessing-classesDefinitions' }
 PBClassLoaderGeneric >> systemDefinitionAt: aString ifAbsent: aBlockClosure [ 
-	^ [self systemDefinitionAt: aString] on: Error do: [aBlockClosure value]
+	^ self builder systemDefinitionAt: aString ifAbsent: [ aBlockClosure value ]
 ]
