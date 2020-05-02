@@ -359,7 +359,7 @@ PBClassLoaderGeneric >> systemDefinition [
 
 { #category : #'accessing-classesDefinitions' }
 PBClassLoaderGeneric >> systemDefinitionAt: aString [ 
-	^ self builder systemDefinitionAt: aString ifAbsent: [ nil ]
+	^ self builder systemDefinitionAt: aString 
 ]
 
 { #category : #'accessing-classesDefinitions' }
