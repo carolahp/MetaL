@@ -57,6 +57,15 @@ PBBootstrapGeneric >> installClasses [
 	builder createClasses
 ]
 
+{ #category : #'bootstrap3-methods' }
+PBBootstrapGeneric >> installMethods [
+	builder 
+		"installOnlyMarkedMethods: self installOnlyMarkedMethods;"
+		installMethods;
+		installExtensionMethods
+		
+]
+
 { #category : #'bootstrap1-stubs' }
 PBBootstrapGeneric >> installStubsAndInitialObjects [
 	builder initializeBootstrapEnvironment.

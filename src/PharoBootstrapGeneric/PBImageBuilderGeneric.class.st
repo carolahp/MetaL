@@ -14,7 +14,7 @@ Class {
 	#category : #'PharoBootstrapGeneric-builders'
 }
 
-{ #category : #'bootstrap1-stubs-objectMemory' }
+{ #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> allocateClassTable [
 	"Allocate the root of the classTable plus enough pages to accomodate all classes in
 	 the classToIndex map.  Don't fill in the entries yet; the classes have yet to be cloned."
@@ -25,7 +25,7 @@ PBImageBuilderGeneric >> allocateClassTable [
 					format: newHeap arrayFormat
 					classIndex: newHeap arrayClassIndexPun.
 	newOop := tableRoot.
-	self haltIf: [ newOop = 4239888 ].
+	"self haltIf: [ newOop = 4239888 ]."
 	self assert: (newHeap numSlotsOf: tableRoot) = (newHeap classTableRootSlots + newHeap hiddenRootSlots).
 	self assert: (newHeap formatOf: tableRoot) = newHeap arrayFormat.
 	self assert: (newHeap classIndexOf: tableRoot) = newHeap arrayClassIndexPun.
@@ -67,7 +67,7 @@ PBImageBuilderGeneric >> allocateClassTable [
 	newHeap setHiddenRootsObj: tableRoot
 ]
 
-{ #category : #'bootstrap1-stubs-objectMemory' }
+{ #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> allocateFreeLists [
 	"Allocate the freeLists array."
 	| newOop |
@@ -77,7 +77,7 @@ PBImageBuilderGeneric >> allocateFreeLists [
 						classIndex: objectSpace backend simulator objectMemory wordSizeClassIndexPun.
 	self assert: (self objectMemory objectAfter: objectSpace backend trueObject target address) = freeListsOop.
 	newOop := freeListsOop.
-	self haltIf: [ newOop = 4239888 ].
+	"self haltIf: [ newOop = 4239888 ]."
 	0 to: objectSpace backend simulator objectMemory numFreeLists - 1 do:
 		[:i|
 		self objectMemory
@@ -91,6 +91,12 @@ PBImageBuilderGeneric >> allocateFreeLists [
 PBImageBuilderGeneric >> arrayClassIndex [
 	
 	^ self objectMemory arrayClassIndexPun
+]
+
+{ #category : #'bootstrap3-methods' }
+PBImageBuilderGeneric >> at: aString ifAbsent: aBlockClosure [ 
+	"returns nil because this method is used to get CompiledMethod for generating Compiled Method instances durin the bootstrap"
+	^ aBlockClosure value
 ]
 
 { #category : #bindings }
@@ -156,12 +162,12 @@ PBImageBuilderGeneric >> classNamed: aString [
 			asRemoteClassOrTraitFromEnvironment: self
 ]
 
-{ #category : #'creating-classes' }
+{ #category : #'bootstrap2-classes' }
 PBImageBuilderGeneric >> createBehaviorFromDefinition: aRGBehavior [ 
 	^ self classLoader createBehaviorFromDefinition: aRGBehavior
 ]
 
-{ #category : #'creating-classes' }
+{ #category : #'bootstrap2-classes' }
 PBImageBuilderGeneric >> createClasses [
 	| definitions total |
 	definitions := self systemDefinition allClassesAndTraits sorted: [ :a :b | a name < b name ].
@@ -230,6 +236,11 @@ PBImageBuilderGeneric >> createStubForClassNamed: aString [
 ]
 
 { #category : #'bootstrap1-stubs' }
+PBImageBuilderGeneric >> createStubInstanceOfArrayOfSize: anInteger [ 
+	^ self classLoader createStubInstanceOfArrayOfSize: anInteger 
+]
+
+{ #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createTrue [
 
 	| trueObject |
@@ -256,7 +267,7 @@ PBImageBuilderGeneric >> createVMStubs [
 	self allocateFreeLists.
 	self allocateClassTable.
 	
-	specialObjectsArray := self classLoader createStubInstanceOfArrayOfSize: 60.
+	specialObjectsArray := self createStubInstanceOfArrayOfSize: 60.
 	objectSpace specialObjectsArray: specialObjectsArray.
 	objectSpace nilObject: objectSpace nilObject.
 	objectSpace falseObject: objectSpace falseObject.
@@ -325,7 +336,7 @@ PBImageBuilderGeneric >> espellBackend [
 	^ espellBackend 
 ]
 
-{ #category : #bootstrapping0 }
+{ #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> flushNewSpace [
 
 	| newHeap |
@@ -355,12 +366,12 @@ PBImageBuilderGeneric >> flushNewSpace [
 	self prepareSimulatorForExecution.
 ]
 
-{ #category : #'bootstrap-utils-classes' }
+{ #category : #utils }
 PBImageBuilderGeneric >> formatOf: aClassRole [ 
 	^ (self systemDefinitionAt: aClassRole) format
 ]
 
-{ #category : #'bootstrap1-stubs' }
+{ #category : #initializing }
 PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	
 	espellBackend := EPSimulatorBackend for32Bit forBootstrap.
@@ -376,7 +387,7 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	objectSpace symbolTable: (EPExternalSymbolTable new objectSpace: objectSpace; yourself).
 	
 
-	classLoader := PBClassLoaderGenericReflective new.
+	classLoader := PBClassLoaderGenericNonReflective new.
 	classLoader builder: self.
 	
 	bootstrapInterpreter := EPASTEvaluator new.
@@ -393,9 +404,56 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	objectSpace debuggerInterpreter: debuggerInterpreter
 ]
 
+{ #category : #'bootstrap3-methods' }
+PBImageBuilderGeneric >> installMethods [
+	
+	| definitions total |
+	definitions := self systemDefinition allClassesAndTraits sorted: [ :a :b | a name < b name ].
+	total := definitions size.
+	definitions withIndexDo: [ :aClassDefinition :index |
+		self installMethodsInBehaviorDefinition: aClassDefinition prefixed: (index printPaddedWith: $0 to: 3), '/' , total asString.
+	].
+	PBStepFinishedSignal emit: 'installed_methods'.
+	self checkpoint: 'installed_methods'.
+]
+
+{ #category : #'bootstrap3-methods' }
+PBImageBuilderGeneric >> installMethodsInBehaviorDefinition: behaviorDefinition prefixed: aPrefix [
+	| behaviorMirror  |
+	behaviorMirror := bootstrapEnvironment at: behaviorDefinition name.
+	self
+		installMethodsInBehaviorMapping: behaviorDefinition
+		using: self methodBuilder
+		onMirror: behaviorMirror
+		prefixed: aPrefix.
+	self
+		installMethodsInBehaviorMapping: behaviorDefinition classSide
+		using: self methodBuilder
+		onMirror: behaviorMirror basicClass
+		prefixed: aPrefix.
+]
+
+{ #category : #'bootstrap3-methods' }
+PBImageBuilderGeneric >> installMethodsInBehaviorMapping: aBehaviorMapping using: aMethodBuilder onMirror: mirror prefixed: aPrefix [
+	| newMethods theClass |
+	newMethods := (aMethodBuilder methodsFromDefinition: aBehaviorMapping) sorted: [ :a :b | a selector < b selector ].
+	theClass := (self classNamed: aBehaviorMapping theNonMetaClass name) mirror.
+	aBehaviorMapping isMeta ifTrue: [ theClass := theClass classSide ].
+	newMethods doWithIndex: [ :method :index |
+		"PBSubStepFinishedSignal emit: aPrefix, ' - ', index asString, '/', newMethods size asString, ': Installing method ', 
+			aBehaviorMapping name, '>>', method selector."
+		self installMethod: method inBehavior: theClass.
+	].
+]
+
 { #category : #accessing }
 PBImageBuilderGeneric >> languageDefinition [
 	^ languageDefinition
+]
+
+{ #category : #accessor }
+PBImageBuilderGeneric >> methodBuilder [
+	^ PBMethodCompilerGeneric new builder: self; yourself.	
 ]
 
 { #category : #accessing }
@@ -409,7 +467,7 @@ PBImageBuilderGeneric >> objectSpace [
 	^ objectSpace
 ]
 
-{ #category : #'bootstrapping0-memoryPreparing' }
+{ #category : #initializing }
 PBImageBuilderGeneric >> prepareSimulatorForExecution [
 
 	| savedEndOfMemory |
