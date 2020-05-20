@@ -101,7 +101,8 @@ PBImageBuilderGeneric >> at: aString ifAbsent: aBlockClosure [
 
 { #category : #bindings }
 PBImageBuilderGeneric >> bindingOf: aName [
-
+	
+"
 	([ self systemDefinition classNamed: aName ] on: Error do: [ nil ]) isNotNil
 		ifTrue: [  "(objectSpace classNamed: aName) mirror asClassMirror" 
 			^ EPClassBinding new
@@ -126,7 +127,7 @@ PBImageBuilderGeneric >> bindingOf: aName [
 			 ]
 		].
 			
-	^ nil
+	^ nil"
 ]
 
 { #category : #accessing }
@@ -144,7 +145,7 @@ PBImageBuilderGeneric >> bootstrapInterpreter [
 	^ bootstrapInterpreter
 ]
 
-{ #category : #'mapping-mirrors-definitions' }
+{ #category : #'accessing-mapping-mirrors/definitions' }
 PBImageBuilderGeneric >> classForClassMirror: anEPClassMirror [
 
 	^ classLoader classForClassMirror: anEPClassMirror
@@ -155,11 +156,9 @@ PBImageBuilderGeneric >> classLoader [
 	^ classLoader
 ]
 
-{ #category : #accessing }
+{ #category : #'remote-classes' }
 PBImageBuilderGeneric >> classNamed: aString [ 
-
-	^ (classLoader classNamed: aString)
-			asRemoteClassOrTraitFromEnvironment: self
+	^ self classLoader classNamed: aString
 ]
 
 { #category : #'bootstrap2-classes' }
@@ -199,16 +198,25 @@ PBImageBuilderGeneric >> createFalse [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createInitialObjects [
-	| nilObj smalltalk |
+	| nilObj systemDictionary |
+	
 	nilObj := objectSpace nilObject.
+	EPSpurImage onFirstObject: nilObj.
 	" Initialize globals in the bootstrap environment "
 	(self languageDefinition globalVariables) do: [ :globalVarName |
 		self bootstrapEnvironment at: globalVarName put: nilObj.
 		self assert: (self bootstrapEnvironment at: globalVarName) = nilObj ].
 	
 	classLoader initializeClassPools.
-	smalltalk := self languageDefinition instructionNewSystemDictionary evaluate.
-	self bootstrapEnvironment at: #Smalltalk put: smalltalk.
+	
+	systemDictionary := (self remoteClass: #SystemDictionary) asRemoteDictionary.
+	systemDictionary at: #asd put: 1.
+	(PBHybridDebugger withCode: 'PCDictionary new' temps: {  } interpreter: self debuggerInterpreter interpreter) openWithSpec.
+	(PBHybridDebugger withCode: 'sysDic new at: #asd put:1' temps: { 'systemDict' -> (self classLoader classNamed: #SystemDictionary) } interpreter: self debuggerInterpreter interpreter) openWithSpec.
+	(self languageDefinition hookSystemDictionaryInitialize: systemDictionary) evaluate. 
+	
+	"smalltalk := self languageDefinition instructionNewSystemDictionary evaluate."
+	"self bootstrapEnvironment at: #Smalltalk put: smalltalk."
 	
 	"self bootstrapInterpreter evaluateCode: 'Smalltalk globals at: #Smalltalk put: Smalltalk'.
 	espellBackend systemDictionary: (smalltalk instanceVariableAtIndex: 1).
@@ -225,7 +233,7 @@ PBImageBuilderGeneric >> createNil [
 		createStubInstanceOf: #UndefinedObject 
 		classIndex: self classLoader newClassIndex.
 	
-	objectSpace nilObject: nilObject.
+	objectSpace nilObject: nilObject .
 	^ objectSpace nilObject
 ]
 
@@ -261,7 +269,6 @@ PBImageBuilderGeneric >> createVMStubs [
 	self createNil.
 	self createFalse.
 	self createTrue.
-	
 	self test01FirstObjectsStubs.
 	
 	self allocateFreeLists.
@@ -318,12 +325,11 @@ PBImageBuilderGeneric >> createVMStubs [
 	objectSpace backend
 		pointClass: (self createStubForClassNamed: #Point).
 	objectSpace backend
-		processorAssociation: (self classNamed: #Association) mirror basicNew.
+		processorAssociation: (self classNamed: #Association) basicNew.
 	objectSpace backend processorAssociation
-		instanceVariableAtIndex: 2
-		put: (self createStubForClassNamed: #ProcessorScheduler) basicNew.
+		value: (self createStubForClassNamed: #ProcessorScheduler) basicNew.
 	objectSpace backend
-		specialSelectors: ((self classNamed: #Array) mirror basicNew: 64)
+		specialSelectors: ((self classNamed: #Array) basicNew: 64)
 ]
 
 { #category : #accessing }
@@ -340,7 +346,6 @@ PBImageBuilderGeneric >> espellBackend [
 PBImageBuilderGeneric >> flushNewSpace [
 
 	| newHeap |
-	
 	newHeap := espellBackend objectMemory.
 	newHeap initializePostBootstrap.
 	
@@ -374,14 +379,15 @@ PBImageBuilderGeneric >> formatOf: aClassRole [
 { #category : #initializing }
 PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	
-	espellBackend := EPSimulatorBackend for32Bit forBootstrap.
-	espellBackend instanceVariableMapping: self systemDefinition instanceVariableMapping.
+	espellBackend := EP2Backend for32Bit forBootstrap.
+	espellBackend systemDefinition: self systemDefinition.
 	
-	bootstrapEnvironment := Dictionary new.
+	bootstrapEnvironment := EP2Environment new.
+	bootstrapEnvironment builder: self.
 	
 	"We initialize the object space with a boot symbol table and character table.
 	We will later replace them by real ones."
-	objectSpace := EPObjectSpace new.
+	objectSpace := EP2ObjectSpace new.
 	objectSpace backend: espellBackend.
 	objectSpace characterTable: (EPExternalCharacterTable new objectSpace: objectSpace; yourself).
 	objectSpace symbolTable: (EPExternalSymbolTable new objectSpace: objectSpace; yourself).
@@ -392,16 +398,17 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	
 	bootstrapInterpreter := EPASTEvaluator new.
 	bootstrapInterpreter codeProvider: self.
-	bootstrapInterpreter environment: self.
+	bootstrapInterpreter environment: bootstrapEnvironment.
 	bootstrapInterpreter objectSpace: objectSpace.
 	 
 	debuggerInterpreter := DASTEvaluator new.
 	debuggerInterpreter codeProvider: self.
-	debuggerInterpreter environment: self.
+	debuggerInterpreter environment: bootstrapEnvironment.
 	debuggerInterpreter objectSpace: objectSpace.
 	
 	objectSpace interpreter: bootstrapInterpreter.
-	objectSpace debuggerInterpreter: debuggerInterpreter
+	objectSpace debuggerInterpreter: debuggerInterpreter.
+	espellBackend objectSpace: objectSpace
 ]
 
 { #category : #'bootstrap3-methods' }
@@ -485,6 +492,11 @@ PBImageBuilderGeneric >> prepareSimulatorForExecution [
 		runLeakCheckerForFullGC.
 ]
 
+{ #category : #'accessing-classes-installed' }
+PBImageBuilderGeneric >> remoteClass: aString [ 
+	^ (self classLoader classNamed: aString) asRemoteClass
+]
+
 { #category : #accessing }
 PBImageBuilderGeneric >> simulator [
 	^ objectSpace backend simulator objectMemory
@@ -492,7 +504,7 @@ PBImageBuilderGeneric >> simulator [
 
 { #category : #'accessing-environment' }
 PBImageBuilderGeneric >> spurImage [
-	^ EPSpurImage onFirstObject: espellBackend nilObject
+	^ EP2SpurImage onFirstObject: espellBackend nilObject
 ]
 
 { #category : #accessing }

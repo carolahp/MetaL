@@ -4,8 +4,8 @@ Class {
 	#instVars : [
 		'builder',
 		'fullyLoaded',
-		'mirrorDefinitionMap',
-		'definitionMirrorMap'
+		'addressDefinitionMap',
+		'addressLocalClassMap'
 	],
 	#classVars : [
 		'nextClassIndex'
@@ -13,9 +13,24 @@ Class {
 	#category : #'PharoBootstrapGeneric-builders'
 }
 
+{ #category : #'accessing-mapping-mirrors/definitions' }
+PBClassLoaderGeneric >> addressDefinitionMap [
+	^ addressDefinitionMap
+]
+
+{ #category : #accessing }
+PBClassLoaderGeneric >> addressLocalClassMap [
+	^ addressLocalClassMap 
+]
+
 { #category : #accessing }
 PBClassLoaderGeneric >> backend [ 
 	^ self builder objectSpace backend
+]
+
+{ #category : #'creating-instances' }
+PBClassLoaderGeneric >> basicNewInstanceOf: aClassName [
+	^ (self classNamed: aClassName) basicNew
 ]
 
 { #category : #accessing }
@@ -28,7 +43,7 @@ PBClassLoaderGeneric >> bootstrapEnvironment: aDictionary [
 	self shouldNotImplement 
 ]
 
-{ #category : #'accessing-installedClasses' }
+{ #category : #'accessing-classes-installed' }
 PBClassLoaderGeneric >> bootstrapEnvironmentAt: aString [ 
 	^ self builder bootstrapEnvironmentAt: aString
 ]
@@ -43,17 +58,18 @@ PBClassLoaderGeneric >> builder: aPBImageBuilderGeneric [
 	builder := aPBImageBuilderGeneric
 ]
 
-{ #category : #'mapping-mirrors-definitions' }
+{ #category : #'accessing-mapping-mirrors/definitions' }
 PBClassLoaderGeneric >> classForClassMirror: anEPClassMirror [ 
 	
-	^ self mirrorDefinitionMap at: anEPClassMirror ifAbsent: [ self systemDefinitionAt: #Class ]
+	^ self addressDefinitionMap at: anEPClassMirror target address 
+		ifAbsent: [ self halt.self systemDefinitionAt: #Class ]
 ]
 
-{ #category : #'accessing-installedClasses' }
+{ #category : #'accessing-classes-installed' }
 PBClassLoaderGeneric >> classNamed: aString [ 
 	
-	^ (self bootstrapEnvironmentAt: aString) 
-		ifNil: [ self loadClassNamed: aString ]
+	^ ((self bootstrapEnvironmentAt: aString) 
+		ifNil: [ self loadClassNamed: aString ]) asRemoteClass
 ]
 
 { #category : #'class-creation' }
@@ -65,8 +81,8 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 		"We ensure a class with that name already exists"
 		self bootstrapEnvironment at: aClassDefinition name ifAbsent: [ self createStubForClassNamed: aClassDefinition name ]].
 	
-	newBehavior := (self systemDefinition instructionInstallClass: aClassDefinition) evaluate.
-	(self systemDefinition instructionInitializeMethodDictionaryFor: newBehavior) evaluate.
+	newBehavior := (self systemDefinition hookInstallClass: aClassDefinition) evaluate.
+	(self systemDefinition hookInitializeMethodDictionaryFor: newBehavior) evaluate.
 	
 	aClassDefinition isBehavior ifTrue: [ 
 		self registerClass: newBehavior asClassMirror named: aClassDefinition name fullyLoaded: true.
@@ -77,19 +93,19 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 	(self systemDefinition instructionRegisterInstalledBehaviorInGlobals: newBehavior) evaluate
 ]
 
-{ #category : #'class-creation-stubs' }
+{ #category : #'stubs-class-creation' }
 PBClassLoaderGeneric >> createClassStubForDefinition: aRGBehavior [
 	
 	| class metaclass |	
-	metaclass := self metaclassClass basicNew asClassMirror.
+	metaclass := self metaclassClass basicNew asRemoteClass.
 	metaclass format: aRGBehavior classSide format.
 	
-	class := metaclass basicNew asClassMirror.
+	class := metaclass basicNew asRemoteClass.
 	class format: aRGBehavior format.
 	^ class
 ]
 
-{ #category : #'class-creation-stubs' }
+{ #category : #'stubs-class-creation' }
 PBClassLoaderGeneric >> createStubForClass: aRGBehavior [ 
 
 	| stub |
@@ -102,13 +118,13 @@ PBClassLoaderGeneric >> createStubForClass: aRGBehavior [
 		ifFalse: [ self error: 'Impossible to create class stub! The argument is not a behavior' ]
 ]
 
-{ #category : #'class-creation-stubs' }
+{ #category : #'stubs-class-creation' }
 PBClassLoaderGeneric >> createStubForClassNamed: aString [ 
 
 	^ self createStubForClass: (self systemDefinitionAt: aString)
 ]
 
-{ #category : #'instance-creation-stubs' }
+{ #category : #'stubs-instance-creation' }
 PBClassLoaderGeneric >> createStubForClassNamed: aString metaclassIndex: anInteger newClassIndex: anotherInteger [
 	" We install by hand (non reflectively) a stub that represents a class using as template its definition in the ring model (language definition) " 
 	| stub classDef metaclassIndex newClassIndex |
@@ -117,9 +133,11 @@ PBClassLoaderGeneric >> createStubForClassNamed: aString metaclassIndex: anInteg
 	newClassIndex := anotherInteger.
 	" First we create a zero sized stub object that represents the class.
 	We do so by creating an instance of its metaclass "
-	stub := (self createStubInstanceOf: classDef metaclass name classIndex: metaclassIndex) asClassMirror.
+	stub := (self createStubInstanceOf: classDef metaclass name classIndex: metaclassIndex) asRemoteClass.
+	
 	" Then we set its format (this is saved in the third instance variable of classes)"
 	stub format: classDef format.
+	
 	" Finally we set its identity hash. A class identityHash is its index "
 	stub setHashBitsTo: newClassIndex.
 	self registerClassInClassTable: stub atIndex: newClassIndex.
@@ -127,7 +145,7 @@ PBClassLoaderGeneric >> createStubForClassNamed: aString metaclassIndex: anInteg
 	^ stub
 ]
 
-{ #category : #'instance-creation-stubs' }
+{ #category : #'stubs-instance-creation' }
 PBClassLoaderGeneric >> createStubInstanceOf: aClassName classIndex: anInteger [
 	" A basic stub is an object of size 0 and its class index saved in its header "
 	| format stub classIndex |
@@ -141,12 +159,19 @@ PBClassLoaderGeneric >> createStubInstanceOf: aClassName classIndex: anInteger [
 	^ stub
 ]
 
-{ #category : #'instance-creation-stubs' }
+{ #category : #'stubs-instance-creation' }
 PBClassLoaderGeneric >> createStubInstanceOfArrayOfSize: anInteger [ 
 	^ self backend
 			createObjectWithFormat: (self systemDefinitionAt: #Array) format 
 			withSize: 60
 			classIndex: self builder arrayClassIndex.
+]
+
+{ #category : #'interpret-code' }
+PBClassLoaderGeneric >> evaluate: aString temps: aCollectionOfAssociations [
+	^ self builder bootstrapInterpreter 
+			evaluateCode:  aString 
+			withTemps: aCollectionOfAssociations 
 ]
 
 { #category : #testing }
@@ -157,8 +182,8 @@ PBClassLoaderGeneric >> fullyLoaded [
 { #category : #initialization }
 PBClassLoaderGeneric >> initialize [
 	super initialize.
-	mirrorDefinitionMap := EPDictionary new.
-	definitionMirrorMap := EPDictionary new.
+	addressDefinitionMap := Dictionary new.
+	addressLocalClassMap := Dictionary new.
 	fullyLoaded := Dictionary new
 ]
 
@@ -166,21 +191,19 @@ PBClassLoaderGeneric >> initialize [
 PBClassLoaderGeneric >> initializeClassPool: aClassName [
 
 	| definition class classPool classVariableBindings |
-	definition := self systemDefinition classNamed: aClassName.
+	definition := self systemDefinitionAt: aClassName.
 	classVariableBindings := definition classVarNames collect: [ :each | | classVar |
-		classVar := (self classNamed: #ClassVariable) basicNew.
-		classVar instanceVariableAtIndex: (self instanceVariableMapping classVariableKeyIndex) put: (each asLiteralInObjectSpace: builder objectSpace) ].
+		classVar := self basicNewInstanceOf: #ClassVariable.
+		classVar 
+			instanceVariableAtIndex: (self instanceVariableMapping classVariableKeyIndex) 
+			put: each ].
 	
 	class := self bootstrapEnvironmentAt: aClassName.
-	classPool := builder bootstrapInterpreter
-		evaluateCode: 'aClassVariableNamesCollection asDictionary'
-		withTemps: { 
-			'aClassVariableNamesCollection' -> (builder objectSpace newArrayWithAll: classVariableBindings)
-		}.
+	classPool := self localArrayAsRemoteDictionary: classVariableBindings.
 	
 	"Force the creation of the symbol using the object space class table." 
 	self flag: #bug. "If we do not use basicSetClassName, we duplicate symbols"
-	class basicSetClassName: (aClassName asLiteralInObjectSpace: builder objectSpace).
+	class basicSetClassName: aClassName.
 	class classPool: classPool.
 	^ class
 ]
@@ -221,19 +244,28 @@ PBClassLoaderGeneric >> loadClassNamed: aString [
 	^ class
 ]
 
-{ #category : #'class-registration' }
+{ #category : #'instance-creation' }
+PBClassLoaderGeneric >> localArrayAsRemoteDictionary: aCollection [ 
+	^ builder bootstrapInterpreter
+		evaluateCode: 'aClassVariableNamesCollection asDictionary'
+		withTemps: { 
+			'aClassVariableNamesCollection' -> aCollection
+		}.
+]
+
+{ #category : #'accessing-mapping-mirrors/definitions' }
 PBClassLoaderGeneric >> map: aClassMirror with: aDefinition [
 
 	"We create a mapping between the real classes and their definitions for later"
 	
 	| classSideMirror |
-	self assert: (aClassMirror target isKindOf: EPSimulatorHandle).
+	self assert: (aClassMirror target isKindOf: EP2Handle).
 	(aClassMirror backend simulator objectMemory classTableRootObj) ifNotNil: [
 		self assert: aClassMirror target asClassIndexHandle address notNil.
 		aClassMirror target: (aClassMirror target asClassIndexHandle) ].
 
-	mirrorDefinitionMap at: aClassMirror put: aDefinition.
-	definitionMirrorMap at: aDefinition put: aClassMirror.
+	addressDefinitionMap at: aClassMirror target address put: aDefinition.
+	aDefinition propertyNamed: #address put: aClassMirror target address.
 
 	classSideMirror := aClassMirror basicClass.
 	"only valid for Spur simulator bootstrap by now"
@@ -241,11 +273,11 @@ PBClassLoaderGeneric >> map: aClassMirror with: aDefinition [
 		self assert: classSideMirror target asClassIndexHandle address notNil.
 		classSideMirror target: (classSideMirror target asClassIndexHandle) ].
 	
-	mirrorDefinitionMap at: classSideMirror put: aDefinition classSide.
-	definitionMirrorMap at: aDefinition classSide put: classSideMirror.
+	addressDefinitionMap at: classSideMirror target address put: aDefinition classSide.
+	aDefinition classSide propertyNamed: #address put: classSideMirror target address
 ]
 
-{ #category : #'class-creation-stubs' }
+{ #category : #'stubs-class-creation' }
 PBClassLoaderGeneric >> metaclassClass [
 	
 	"Base case for recursion on class creation.
@@ -267,11 +299,10 @@ PBClassLoaderGeneric >> metaclassClass [
 	theNewMetaclassClass := self createStubForClassNamed: aRGBehavior metaclass name metaclassIndex: classIndex newClassIndex: metaclassIndex.
 	
 	self registerClass: theNewMetaclass named: aRGBehavior name.
-
 	^ theNewMetaclass
 ]
 
-{ #category : #migrating }
+{ #category : #'class-registration' }
 PBClassLoaderGeneric >> migrateOldClass: oldClass to: newClass [
 
 	| oldClassMetaclass |
@@ -293,12 +324,7 @@ PBClassLoaderGeneric >> migrateOldClass: oldClass to: newClass [
 		ifFalse:[ oldClassMetaclass becomeInto: newClass basicClass ] 
 ]
 
-{ #category : #'mapping-mirrors-definitions' }
-PBClassLoaderGeneric >> mirrorDefinitionMap [
-	^ mirrorDefinitionMap
-]
-
-{ #category : #'class-creation-stubs' }
+{ #category : #'stubs-class-creation' }
 PBClassLoaderGeneric >> newClassIndex [
 	"The first page of the class table contains special classes, so we start in the second page"
 	"This index is shared among all subclasses, do not override! "
@@ -322,11 +348,11 @@ PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded
 	(self bootstrapEnvironment includesKey: className)
 		ifTrue: [ self migrateOldClass: (self bootstrapEnvironment at: className) to: aClassMirror ].
 
-	"We register it and keep up to date our compact class index"
 	self bootstrapEnvironment at: className put: aClassMirror.
 	self bootstrapEnvironment at: metaclassName put: aClassMirror basicClass.
-	
-	aClassMirror asClassMirror compactClassIndex = 0 ifFalse: [ 
+
+	"We register it and keep up to date our compact class index"	
+	aClassMirror compactClassIndex = 0 ifFalse: [ 
 		builder objectSpace backend compactClassAt: aClassMirror asClassMirror compactClassIndex put: aClassMirror ].
 	
 	"We create a mapping between the real classes and their definitions for later"
@@ -347,7 +373,7 @@ PBClassLoaderGeneric >> registerClassInClassTable: aClassMirror atIndex: anInteg
 	
 ]
 
-{ #category : #'class-creation-stubs' }
+{ #category : #'stubs-class-creation' }
 PBClassLoaderGeneric >> resetClassIndex [
 	nextClassIndex := nil
 ]
@@ -357,12 +383,12 @@ PBClassLoaderGeneric >> systemDefinition [
 	^ self builder systemDefinition
 ]
 
-{ #category : #'accessing-classesDefinitions' }
+{ #category : #'accessing-classes-definitions' }
 PBClassLoaderGeneric >> systemDefinitionAt: aString [ 
 	^ self builder systemDefinitionAt: aString 
 ]
 
-{ #category : #'accessing-classesDefinitions' }
+{ #category : #'accessing-classes-definitions' }
 PBClassLoaderGeneric >> systemDefinitionAt: aString ifAbsent: aBlockClosure [ 
 	^ self builder systemDefinitionAt: aString ifAbsent: [ aBlockClosure value ]
 ]
