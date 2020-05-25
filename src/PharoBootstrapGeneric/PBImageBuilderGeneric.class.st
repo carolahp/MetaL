@@ -137,7 +137,9 @@ PBImageBuilderGeneric >> bootstrapEnvironment [
 
 { #category : #'accessing-environment' }
 PBImageBuilderGeneric >> bootstrapEnvironmentAt: aString [ 
-	^ self bootstrapEnvironment at: (self systemDefinition classWithRole: aString) name ifAbsent: [ nil ]
+	| classDefinition |
+	classDefinition := [self systemDefinition classByRoleOrName: aString] on: PBClassDefinitionNotFound  do: [ ^ nil ].
+	^ self bootstrapEnvironment at: classDefinition name ifAbsent: [ nil ]
 ]
 
 { #category : #accessing }
@@ -519,12 +521,12 @@ PBImageBuilderGeneric >> systemDefinition: aPBLanguageDefinitionPharoCandle [
 
 { #category : #'accessing-systemDefinition' }
 PBImageBuilderGeneric >> systemDefinitionAt: aString [ 
-	^ self systemDefinitionAt: aString ifAbsent: [:evt | evt defaultAction] 
+	^ self systemDefinition classByRoleOrName: aString
 ]
 
 { #category : #'accessing-systemDefinition' }
 PBImageBuilderGeneric >> systemDefinitionAt: aString ifAbsent: aBlockClosure [ 
-	^ [ self systemDefinition classWithRole: aString ] on: PBClassDefinitionNotFound do: aBlockClosure
+	^ [ self systemDefinition classByRoleOrName: aString ] on: PBClassDefinitionNotFound do: aBlockClosure
 ]
 
 { #category : #tests }

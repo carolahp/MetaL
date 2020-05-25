@@ -149,7 +149,7 @@ PBClassLoaderGeneric >> createStubForClassNamed: aString metaclassIndex: anInteg
 PBClassLoaderGeneric >> createStubInstanceOf: aClassName classIndex: anInteger [
 	" A basic stub is an object of size 0 and its class index saved in its header "
 	| format stub classIndex |
-	format := (self systemDefinition classWithRole: aClassName) format.
+	format := (self systemDefinitionAt: aClassName) format.
 	classIndex := anInteger.
 	stub := (self backend
 			createObjectWithFormat: format 
@@ -308,8 +308,8 @@ PBClassLoaderGeneric >> migrateOldClass: oldClass to: newClass [
 	| oldClassMetaclass |
 	
 	"We migrate the class pools"
-	oldClass asClassMirror classPool isNilObject ifFalse: [
-		newClass asClassMirror classPool: oldClass asClassMirror classPool ].
+	oldClass asRemoteClass classPool isNilObject ifFalse: [
+		newClass asRemoteClass classPool: oldClass asRemoteClass classPool ].
 	
 	"We migrate the class instance variables"
 	"A class has at least 14 instances variables (cf class description, behavior). Starting from 15, we get user defined class instances variables."
