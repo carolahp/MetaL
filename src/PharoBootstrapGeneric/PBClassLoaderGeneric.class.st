@@ -4,8 +4,7 @@ Class {
 	#instVars : [
 		'builder',
 		'fullyLoaded',
-		'addressDefinitionMap',
-		'addressLocalClassMap'
+		'addressDefinitionMap'
 	],
 	#classVars : [
 		'nextClassIndex'
@@ -19,18 +18,8 @@ PBClassLoaderGeneric >> addressDefinitionMap [
 ]
 
 { #category : #accessing }
-PBClassLoaderGeneric >> addressLocalClassMap [
-	^ addressLocalClassMap 
-]
-
-{ #category : #accessing }
 PBClassLoaderGeneric >> backend [ 
 	^ self builder objectSpace backend
-]
-
-{ #category : #'creating-instances' }
-PBClassLoaderGeneric >> basicNewInstanceOf: aClassName [
-	^ (self classNamed: aClassName) basicNew
 ]
 
 { #category : #accessing }
@@ -183,7 +172,6 @@ PBClassLoaderGeneric >> fullyLoaded [
 PBClassLoaderGeneric >> initialize [
 	super initialize.
 	addressDefinitionMap := Dictionary new.
-	addressLocalClassMap := Dictionary new.
 	fullyLoaded := Dictionary new
 ]
 
@@ -193,17 +181,14 @@ PBClassLoaderGeneric >> initializeClassPool: aClassName [
 	| definition class classPool classVariableBindings |
 	definition := self systemDefinitionAt: aClassName.
 	classVariableBindings := definition classVarNames collect: [ :each | | classVar |
-		classVar := self basicNewInstanceOf: #ClassVariable.
-		classVar 
-			instanceVariableAtIndex: (self instanceVariableMapping classVariableKeyIndex) 
-			put: each ].
-	
+		classVar := (self builder remoteClass: #ClassVariable) new.
+		classVar key: each ].
 	class := self bootstrapEnvironmentAt: aClassName.
 	classPool := self localArrayAsRemoteDictionary: classVariableBindings.
 	
 	"Force the creation of the symbol using the object space class table." 
-	self flag: #bug. "If we do not use basicSetClassName, we duplicate symbols"
-	class basicSetClassName: aClassName.
+	self flag: #bug. "If we do not use name:, we duplicate symbols"
+	class name: aClassName.
 	class classPool: classPool.
 	^ class
 ]
@@ -345,7 +330,7 @@ PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded
 	metaclassName := definition classSide name.
 	
 	"If it existed before, we migrate its state"
-	(self bootstrapEnvironment includesKey: className)
+	((aClassMirror isStub not) and: (self bootstrapEnvironment includesKey: className))
 		ifTrue: [ self migrateOldClass: (self bootstrapEnvironment at: className) to: aClassMirror ].
 
 	self bootstrapEnvironment at: className put: aClassMirror.
