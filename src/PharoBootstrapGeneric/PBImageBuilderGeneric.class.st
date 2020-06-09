@@ -200,18 +200,15 @@ PBImageBuilderGeneric >> createFalse [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createInitialObjects [
-	| nilObj systemDictionary |
+	| systemDictionary |
+	self halt.
 	
-	nilObj := objectSpace nilObject.
-	EPSpurImage onFirstObject: nilObj.
 	" Initialize globals in the bootstrap environment "
-	(self languageDefinition globalVariables) do: [ :globalVarName |
-		self bootstrapEnvironment at: globalVarName put: nilObj.
-		self assert: (self bootstrapEnvironment at: globalVarName) = nilObj ].
+	self initializeGlobals.
 	
 	classLoader initializeClassPools.
 	
-	systemDictionary := (self remoteClass: #SystemDictionary) asRemoteDictionary.
+	systemDictionary := (self remoteClass: #SystemDictionary) new asRemoteDictionary.
 	systemDictionary at: #asd put: 1.
 	(PBHybridDebugger withCode: 'PCDictionary new' temps: {  } interpreter: self debuggerInterpreter interpreter) openWithSpec.
 	(PBHybridDebugger withCode: 'sysDic new at: #asd put:1' temps: { 'systemDict' -> (self classLoader classNamed: #SystemDictionary) } interpreter: self debuggerInterpreter interpreter) openWithSpec.
@@ -411,6 +408,16 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	objectSpace interpreter: bootstrapInterpreter.
 	objectSpace debuggerInterpreter: debuggerInterpreter.
 	espellBackend objectSpace: objectSpace
+]
+
+{ #category : #globals }
+PBImageBuilderGeneric >> initializeGlobals [
+	| nilObj |
+	nilObj := objectSpace nilObject.
+	(self languageDefinition globalVariables) do: [ :globalVarName |
+		" Create one global for each global variable in the language definition "
+		self bootstrapEnvironment at: globalVarName put: nilObj.
+		self assert: (self bootstrapEnvironment at: globalVarName) = nilObj ]
 ]
 
 { #category : #'bootstrap3-methods' }
