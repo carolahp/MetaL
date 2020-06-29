@@ -331,6 +331,14 @@ PBImageBuilderGeneric >> createVMStubs [
 		specialSelectors: ((self classNamed: #Array) basicNew: 64)
 ]
 
+{ #category : #debugging }
+PBImageBuilderGeneric >> debug: aString withTemps: aCollection [ 
+	(PBHybridDebugger 
+		withCode: aString 
+		temps: aCollection 
+		interpreter: self debuggerInterpreter interpreter) openWithSpec.
+]
+
 { #category : #accessing }
 PBImageBuilderGeneric >> debuggerInterpreter [
 	^ debuggerInterpreter
