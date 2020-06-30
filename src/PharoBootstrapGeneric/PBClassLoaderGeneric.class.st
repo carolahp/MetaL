@@ -49,9 +49,9 @@ PBClassLoaderGeneric >> builder: aPBImageBuilderGeneric [
 
 { #category : #'accessing-mapping-mirrors/definitions' }
 PBClassLoaderGeneric >> classForClassMirror: anEPClassMirror [ 
-	
+	self assert: anEPClassMirror isRemoteClass.
 	^ self addressDefinitionMap at: anEPClassMirror target address 
-		ifAbsent: [ self halt.self systemDefinitionAt: #Class ]
+		ifAbsent: [ self systemDefinitionAt: #Class ]
 ]
 
 { #category : #'accessing-classes-installed' }
@@ -70,14 +70,15 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 		"We ensure a class with that name already exists"
 		self bootstrapEnvironment at: aClassDefinition name ifAbsent: [ self createStubForClassNamed: aClassDefinition name ]].
 	
-	newBehavior := (self systemDefinition hookInstallClass: aClassDefinition) evaluate.
-	(self systemDefinition hookInitializeMethodDictionaryFor: newBehavior) evaluate.
+	newBehavior := (self systemDefinition hookInstallClass: aClassDefinition) evaluate asRemoteClass.
 	
 	aClassDefinition isBehavior ifTrue: [ 
-		self registerClass: newBehavior asClassMirror named: aClassDefinition name fullyLoaded: true.
+		self registerClass: newBehavior asRemoteClass named: aClassDefinition name fullyLoaded: true.
 	] ifFalse: [
-		self registerTrait: newBehavior asTraitMirror named: aClassDefinition name fullyLoaded: true.
+		self registerTrait: newBehavior asRemoteTrait named: aClassDefinition name fullyLoaded: true.
 	].
+	
+	(self systemDefinition hookInitializeMethodDictionaryFor: newBehavior) evaluate.
 	"we register the class by hand in the Smalltalk globals"
 	(self systemDefinition instructionRegisterInstalledBehaviorInGlobals: newBehavior) evaluate
 ]
@@ -290,15 +291,18 @@ PBClassLoaderGeneric >> metaclassClass [
 { #category : #'class-registration' }
 PBClassLoaderGeneric >> migrateOldClass: oldClass to: newClass [
 
-	| oldClassMetaclass |
+	| oldClassMetaclass oldClassAddress oldMetaclassAddress |
+	
+	oldClassAddress := oldClass target address.
+	oldMetaclassAddress := oldClass basicClass target address.		
 	
 	"We migrate the class pools"
 	oldClass asRemoteClass classPool isNilObject ifFalse: [
 		newClass asRemoteClass classPool: oldClass asRemoteClass classPool ].
 	
 	"We migrate the class instance variables"
-	"A class has at least 14 instances variables (cf class description, behavior). Starting from 15, we get user defined class instances variables."
-	((newClass instanceVariableMapping classNumberOfVariables) + 1) to: oldClass fixedSize do: [ :index |
+	"A class has at least 14 instances variables (cf class description, behavior) (this is for full Pharo). Starting from 15, we get user defined class instances variables."
+	((builder systemDefinition instanceVariableMapping classNumberOfVariables) + 1) to: oldClass fixedSize do: [ :index |
 		newClass instanceVariableAtIndex: index put: (oldClass instanceVariableAtIndex: index).
 	].
 
@@ -306,7 +310,11 @@ PBClassLoaderGeneric >> migrateOldClass: oldClass to: newClass [
 	oldClassMetaclass := oldClass basicClass.
 	oldClass becomeInto: newClass.
 	oldClassMetaclass target == Metaclass
-		ifFalse:[ oldClassMetaclass becomeInto: newClass basicClass ] 
+		ifFalse:[ oldClassMetaclass becomeInto: newClass basicClass ].
+		
+	addressDefinitionMap removeKey: oldClassAddress.
+	addressDefinitionMap removeKey: oldMetaclassAddress.
+			
 ]
 
 { #category : #'stubs-class-creation' }
@@ -331,7 +339,9 @@ PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded
 	
 	"If it existed before, we migrate its state"
 	((aClassMirror isStub not) and: (self bootstrapEnvironment includesKey: className))
-		ifTrue: [ self migrateOldClass: (self bootstrapEnvironment at: className) to: aClassMirror ].
+		ifTrue: [ 			
+			self migrateOldClass: (self bootstrapEnvironment at: className) to: aClassMirror.
+			 ]. 
 
 	self bootstrapEnvironment at: className put: aClassMirror.
 	self bootstrapEnvironment at: metaclassName put: aClassMirror basicClass.
@@ -349,7 +359,12 @@ PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded
 	builder objectSpace backend addExtraRoot: aClassMirror classSide.
 	
 	"We reset the class map of the ast interpreter"
-	self fullyLoaded at: className put: aBoolean
+	self fullyLoaded at: className put: aBoolean.
+	aBoolean ifTrue: [ 
+		"we register the installed class in the remote system dictionary only if it's the fully loaded version"
+		self builder objectSpace systemDictionary at: definition name put: aClassMirror.
+		self builder objectSpace systemDictionary at: definition metaclass name put: aClassMirror basicClass.
+		 ]
 ]
 
 { #category : #'class-registration' }

@@ -9,7 +9,8 @@ Class {
 		'bootstrapInterpreter',
 		'debuggerInterpreter',
 		'freeListsOop',
-		'classLoader'
+		'classLoader',
+		'stubsReady'
 	],
 	#category : #'PharoBootstrapGeneric-builders'
 }
@@ -101,33 +102,7 @@ PBImageBuilderGeneric >> at: aString ifAbsent: aBlockClosure [
 
 { #category : #bindings }
 PBImageBuilderGeneric >> bindingOf: aName [
-	
-"
-	([ self systemDefinition classNamed: aName ] on: Error do: [ nil ]) isNotNil
-		ifTrue: [  "(objectSpace classNamed: aName) mirror asClassMirror" 
-			^ EPClassBinding new
-				name: aName objectSpace: self;
-				yourself ].
-	(((self systemDefinition globalVariableNamed: aName) isNotNil) or: [(self bootstrapEnvironment at: aName ifAbsent: [nil]) isNotNil])
-		ifTrue: [ ^
-			EPGlobalBinding new
-				name: aName objectSpace: self;
-				yourself ].
-	self bootstrapEnvironment do: [:class | |rgClass|
-		class isClassMirror ifTrue: [ 
-			rgClass := class asClassMirror asRGClass.
-			(rgClass classVarNames contains: [:cn | cn = aName])
-				ifTrue: [|index|
-					index := rgClass classVarNames indexOf: aName.
-					^ EPClassVariableBinding new
-						name: aName
-						ownerName: rgClass theNonMetaClass name asSymbol
-						objectSpace: self;
-						yourself ]
-			 ]
-		].
-			
-	^ nil"
+	^ self bootstrapEnvironment bindingOf: aName 
 ]
 
 { #category : #accessing }
@@ -200,27 +175,14 @@ PBImageBuilderGeneric >> createFalse [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createInitialObjects [
-	| systemDictionary |
-	self halt.
-	
 	" Initialize globals in the bootstrap environment "
 	self initializeGlobals.
-	
 	classLoader initializeClassPools.
 	
-	systemDictionary := (self remoteClass: #SystemDictionary) new asRemoteDictionary.
-	systemDictionary at: #asd put: 1.
-	(PBHybridDebugger withCode: 'PCDictionary new' temps: {  } interpreter: self debuggerInterpreter interpreter) openWithSpec.
-	(PBHybridDebugger withCode: 'sysDic new at: #asd put:1' temps: { 'systemDict' -> (self classLoader classNamed: #SystemDictionary) } interpreter: self debuggerInterpreter interpreter) openWithSpec.
-	(self languageDefinition hookSystemDictionaryInitialize: systemDictionary) evaluate. 
-	
-	"smalltalk := self languageDefinition instructionNewSystemDictionary evaluate."
-	"self bootstrapEnvironment at: #Smalltalk put: smalltalk."
-	
-	"self bootstrapInterpreter evaluateCode: 'Smalltalk globals at: #Smalltalk put: Smalltalk'.
-	espellBackend systemDictionary: (smalltalk instanceVariableAtIndex: 1).
-	"
-	self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ].
+	" Create and fill remote system dictionary with the contents of the local bootstrap environment"
+	self objectSpace systemDictionary: (self remoteClass: #SystemDictionary) new.
+	bootstrapEnvironment associationsDo: [ :assoc | self objectSpace systemDictionary at: assoc key put: assoc value ].
+	"self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ]."
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -333,9 +295,11 @@ PBImageBuilderGeneric >> createVMStubs [
 
 { #category : #debugging }
 PBImageBuilderGeneric >> debug: aString withTemps: aCollection [ 
+	| temps |
+	temps := aCollection collect: [ :assoc | assoc key -> (assoc value asRemoteObjectInObjectSpace: self objectSpace) ].
 	(PBHybridDebugger 
 		withCode: aString 
-		temps: aCollection 
+		temps: temps 
 		interpreter: self debuggerInterpreter interpreter) openWithSpec.
 ]
 
@@ -428,6 +392,12 @@ PBImageBuilderGeneric >> initializeGlobals [
 		self assert: (self bootstrapEnvironment at: globalVarName) = nilObj ]
 ]
 
+{ #category : #'installing-methods' }
+PBImageBuilderGeneric >> installMethod: anEP2RemoteCompiledMethod inBehavior: anEP2RemoteClass [ 
+	(self systemDefinition hookInstallMethod: anEP2RemoteCompiledMethod inBehavior: anEP2RemoteClass) evaluate.
+	
+]
+
 { #category : #'bootstrap3-methods' }
 PBImageBuilderGeneric >> installMethods [
 	
@@ -461,7 +431,7 @@ PBImageBuilderGeneric >> installMethodsInBehaviorDefinition: behaviorDefinition 
 PBImageBuilderGeneric >> installMethodsInBehaviorMapping: aBehaviorMapping using: aMethodBuilder onMirror: mirror prefixed: aPrefix [
 	| newMethods theClass |
 	newMethods := (aMethodBuilder methodsFromDefinition: aBehaviorMapping) sorted: [ :a :b | a selector < b selector ].
-	theClass := (self classNamed: aBehaviorMapping theNonMetaClass name) mirror.
+	theClass := (self classNamed: aBehaviorMapping theNonMetaClass name) asRemoteClass.
 	aBehaviorMapping isMeta ifTrue: [ theClass := theClass classSide ].
 	newMethods doWithIndex: [ :method :index |
 		"PBSubStepFinishedSignal emit: aPrefix, ' - ', index asString, '/', newMethods size asString, ': Installing method ', 
