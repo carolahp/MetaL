@@ -94,12 +94,6 @@ PBImageBuilderGeneric >> arrayClassIndex [
 	^ self objectMemory arrayClassIndexPun
 ]
 
-{ #category : #'bootstrap3-methods' }
-PBImageBuilderGeneric >> at: aString ifAbsent: aBlockClosure [ 
-	"returns nil because this method is used to get CompiledMethod for generating Compiled Method instances durin the bootstrap"
-	^ aBlockClosure value
-]
-
 { #category : #bindings }
 PBImageBuilderGeneric >> bindingOf: aName [
 	^ self bootstrapEnvironment bindingOf: aName 
@@ -182,6 +176,7 @@ PBImageBuilderGeneric >> createInitialObjects [
 	" Create and fill remote system dictionary with the contents of the local bootstrap environment"
 	self objectSpace systemDictionary: (self remoteClass: #SystemDictionary) new.
 	bootstrapEnvironment associationsDo: [ :assoc | self objectSpace systemDictionary at: assoc key put: assoc value ].
+	self objectSpace systemDictionary at: #Undeclared put: (self remoteClass: #Dictionary) new
 	"self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ]."
 ]
 
