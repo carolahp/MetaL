@@ -66,6 +66,33 @@ PBBootstrapGeneric >> installMethods [
 		
 ]
 
+{ #category : #'bootstrap4-install process' }
+PBBootstrapGeneric >> installProcess [
+	| association process |
+	builder initializeSpecialObjectArray.
+	
+	self bootstrapInterpreter
+		evaluateCode:  '
+	Processor := PCProcessorScheduler basicNew.
+	Processor initProcessLists.'
+		withTemps: #().
+
+	
+	
+	association := (builder classNamed: #Association) new
+		key: builder objectSpace nilObject;
+		value: (builder bootstrapEnvironmentAt: #Processor);
+		yourself.
+	
+	builder objectSpace backend processorAssociation: association .
+	process := builder objectSpace createProcessWithPriority: 3 doing: 'PCSystem start' withTemps: #().
+ 	builder objectSpace installAsActiveProcess: process withProcessor: (builder bootstrapEnvironment at: #Processor).
+	
+	self followForwardingPointers.
+
+	self inform: 'Image Generated successfully'
+]
+
 { #category : #'bootstrap1-stubs' }
 PBBootstrapGeneric >> installStubsAndInitialObjects [
 	builder initializeBootstrapEnvironment.
