@@ -174,10 +174,10 @@ PBImageBuilderGeneric >> createInitialObjects [
 	classLoader initializeClassPools.
 	
 	" Create and fill remote system dictionary with the contents of the local bootstrap environment"
-	self objectSpace systemDictionary: (self remoteClass: #SystemDictionary) new.
+	self objectSpace systemDictionary withSystemDictionary: (self remoteClass: #SystemDictionary) new.
 	bootstrapEnvironment associationsDo: [ :assoc | self objectSpace systemDictionary at: assoc key put: assoc value ].
 	self objectSpace systemDictionary at: #Processor put: self objectSpace nilObject.
-	self objectSpace systemDictionary at: #Undeclared put: (self remoteClass: #Dictionary) new
+	self objectSpace systemDictionary at: #Undeclared put: (self remoteClass: #Dictionary) new.
 	"self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ]."
 ]
 
@@ -304,6 +304,23 @@ PBImageBuilderGeneric >> debuggerInterpreter [
 	^ debuggerInterpreter
 ]
 
+{ #category : #'accessing error messages' }
+PBImageBuilderGeneric >> errorMessagesArray [
+
+	"return objects for error messages - special objects array at index 52"
+	
+ 	^ {nil "nil => generic error". 
+		#'bad receiver'. #'bad argument'. #'bad index'.
+		#'bad number of arguments'.
+		#'inappropriate operation'.  #'unsupported operation'.
+		#'no modification'. #'insufficient object memory'.
+		#'insufficient C memory'. #'not found'. #'bad method'.
+		#'internal error in named primitive machinery'.
+		#'object may move'. #'resource limit exceeded'.
+		#'object is pinned'. #'primitive write beyond end of object'.
+		#'object moved'. #'object not pinned'. #'callback error'} asLiteralInObjectSpace: objectSpace
+]
+
 { #category : #accessing }
 PBImageBuilderGeneric >> espellBackend [
 	^ espellBackend 
@@ -356,8 +373,9 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	We will later replace them by real ones."
 	objectSpace := EP2ObjectSpace new.
 	objectSpace backend: espellBackend.
-	objectSpace characterTable: (EPExternalCharacterTable new objectSpace: objectSpace; yourself).
-	objectSpace symbolTable: (EPExternalSymbolTable new objectSpace: objectSpace; yourself).
+	objectSpace systemDictionary: (EP2SystemDictionary new objectSpace: objectSpace; yourself).
+	objectSpace characterTable: (EP2ExternalCharacterTable new objectSpace: objectSpace; yourself).
+	objectSpace symbolTable: (EP2ExternalSymbolTable new objectSpace: objectSpace; yourself).
 	
 
 	classLoader := PBClassLoaderGeneric new.
