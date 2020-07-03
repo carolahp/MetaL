@@ -13,6 +13,12 @@ PBMethodCompilerGeneric >> builder: aPBImageBuilderGeneric [
 ]
 
 { #category : #'building-methods' }
+PBMethodCompilerGeneric >> createDoit: aString withTemps: aCollection inObjectSpace: anObjectSpace [ 
+	
+	^  anObjectSpace crossCompiler compileDoIt: aString
+]
+
+{ #category : #'building-methods' }
 PBMethodCompilerGeneric >> createNewMethod: aMethodDefinition [
 
 "	| ownerClass |

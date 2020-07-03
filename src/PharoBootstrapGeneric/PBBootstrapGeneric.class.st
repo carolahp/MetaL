@@ -71,7 +71,7 @@ PBBootstrapGeneric >> installProcess [
 	| association process |
 	builder initializeSpecialObjectArray.
 	
-	self bootstrapInterpreter
+	builder bootstrapInterpreter
 		evaluateCode:  '
 	Processor := PCProcessorScheduler basicNew.
 	Processor initProcessLists.'
