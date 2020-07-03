@@ -4,7 +4,8 @@ Class {
 	#instVars : [
 		'architecture',
 		'pbRepository',
-		'builder'
+		'builder',
+		'installOnlyMarkedMethods'
 	],
 	#category : #'PharoBootstrapGeneric-core'
 }
@@ -66,6 +67,11 @@ PBBootstrapGeneric >> installMethods [
 		
 ]
 
+{ #category : #'selecting-methods' }
+PBBootstrapGeneric >> installOnlyMarkedMethods: aBoolean [ 
+	installOnlyMarkedMethods := aBoolean
+]
+
 { #category : #'bootstrap4-install process' }
 PBBootstrapGeneric >> installProcess [
 	| association process |
@@ -88,7 +94,7 @@ PBBootstrapGeneric >> installProcess [
 	process := builder objectSpace createProcessWithPriority: 3 doing: 'PCSystem start' withTemps: #().
  	builder objectSpace installAsActiveProcess: process withProcessor: (builder bootstrapEnvironment at: #Processor).
 	
-	self followForwardingPointers.
+	builder followForwardingPointers.
 
 	self inform: 'Image Generated successfully'
 ]
@@ -123,4 +129,9 @@ PBBootstrapGeneric >> prepareBootstrap [
 		prepareEnvironmentForHermes;
 		generateHermesFiles;
 		prepareEnvironmentForExport."
+]
+
+{ #category : #'writing-image' }
+PBBootstrapGeneric >> writeImageIn: aFileReference [ 
+	^ builder writeImageIn: aFileReference
 ]

@@ -10,7 +10,8 @@ Class {
 		'debuggerInterpreter',
 		'freeListsOop',
 		'classLoader',
-		'stubsReady'
+		'stubsReady',
+		'imageFileReference'
 	],
 	#category : #'PharoBootstrapGeneric-builders'
 }
@@ -132,6 +133,19 @@ PBImageBuilderGeneric >> classNamed: aString [
 	^ self classLoader classNamed: aString
 ]
 
+{ #category : #'initializing image' }
+PBImageBuilderGeneric >> compactImage [
+	| firstFree lastUsed newHeap |
+	newHeap := espellBackend objectMemory.
+	newHeap allHeapEntitiesDo:
+		[:o|
+		(newHeap isFreeObject: o)
+			ifTrue: [firstFree ifNil: [firstFree := o]]
+			ifFalse: [lastUsed := o]].
+	lastUsed < firstFree ifTrue: "nothing to do"
+		[^self].
+]
+
 { #category : #'bootstrap2-classes' }
 PBImageBuilderGeneric >> createBehaviorFromDefinition: aRGBehavior [ 
 	^ self classLoader createBehaviorFromDefinition: aRGBehavior
@@ -178,6 +192,7 @@ PBImageBuilderGeneric >> createInitialObjects [
 	bootstrapEnvironment associationsDo: [ :assoc | self objectSpace systemDictionary at: assoc key put: assoc value ].
 	self objectSpace systemDictionary at: #Processor put: self objectSpace nilObject.
 	self objectSpace systemDictionary at: #Undeclared put: (self remoteClass: #Dictionary) new.
+	self bootstrapInterpreter evaluateCode: 'PCString initialize.'.
 	"self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ]."
 ]
 
@@ -355,9 +370,48 @@ PBImageBuilderGeneric >> flushNewSpace [
 	self prepareSimulatorForExecution.
 ]
 
+{ #category : #'image-initialization' }
+PBImageBuilderGeneric >> followForwardingPointers [
+	| newHeap |
+	newHeap := espellBackend objectMemory.
+	newHeap allObjectsDo: [:o|
+		(newHeap isForwarded: o) ifFalse:
+			[0 to: (newHeap numPointerSlotsOf: o) - 1 do:
+				[:i| | field |
+				field := newHeap fetchPointer: i ofObject: o.
+				(newHeap isOopForwarded: field) ifTrue:
+					[newHeap
+						storePointer: i
+						ofObject: o
+						withValue: (newHeap followForwarded: field)]]]].
+]
+
 { #category : #utils }
 PBImageBuilderGeneric >> formatOf: aClassRole [ 
 	^ (self systemDefinitionAt: aClassRole) format
+]
+
+{ #category : #'initializing image' }
+PBImageBuilderGeneric >> freeForwarders [
+	"Check that all forwarders have been followed.  Then free them."
+	| numForwarders numFreed newHeap |
+	numForwarders := numFreed := 0.
+	newHeap := espellBackend objectMemory.
+	newHeap allObjectsDo:
+		[:o|
+		(newHeap isForwarded: o)
+			ifTrue: [numForwarders := numForwarders + 1]
+			ifFalse:
+				[0 to: (newHeap numPointerSlotsOf: o) - 1 do:
+					[:i|
+					self assert: (newHeap isOopForwarded: (newHeap fetchPointer: i ofObject: o)) not]]].
+	Transcript cr;  nextPutAll: 'freeing '; print: numForwarders; nextPutAll: ' forwarders'; cr; flush.
+	newHeap allObjectsDo:
+		[:o|
+		(newHeap isForwarded: o) ifTrue:
+			[numFreed := numFreed + 1.
+			 newHeap freeObject: o]].
+	self assert: numFreed = numForwarders
 ]
 
 { #category : #initializing }
@@ -566,6 +620,27 @@ PBImageBuilderGeneric >> remoteClass: aString [
 	^ (self classLoader classNamed: aString) asRemoteClass
 ]
 
+{ #category : #'initializing image' }
+PBImageBuilderGeneric >> reportSizes [
+	| oldAvgBytes "newAvgBytes" newHeapSize newHeap |
+	newHeapSize := 20 * 1024 * 1024.
+	newHeap := espellBackend objectMemory.
+	Transcript
+		nextPutAll: 'done.'; cr;
+		nextPutAll: 'initial heap size: '; nextPutAll: newHeapSize asStringWithCommas; cr;
+"		nextPutAll: 'change: '; print: change * 100.0 maxDecimalPlaces: 2; nextPut: $%; cr;"
+		flush.
+	newHeapSize := newHeap endOfMemory
+					- newHeap scavenger eden limit
+					- newHeap totalFreeListBytes.
+"	newAvgBytes := newHeapSize asFloat / newHeapNumObjs."
+	Transcript
+		nextPutAll: 'final new heap size: '; nextPutAll: newHeapSize asStringWithCommas; tab;
+	"	nextPutAll: ' (avg obj bytes '; print: newAvgBytes maxDecimalPlaces: 2; nextPutAll: ' words '; print: newAvgBytes / self wordSize maxDecimalPlaces: 2; nextPut: $); cr;
+""		nextPutAll: 'change: '; print: change * 100.0 maxDecimalPlaces: 2; nextPut: $%; cr;"
+		flush
+]
+
 { #category : #accessing }
 PBImageBuilderGeneric >> simulator [
 	^ objectSpace backend simulator objectMemory
@@ -602,4 +677,66 @@ PBImageBuilderGeneric >> test01FirstObjectsStubs [
 	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace nilObject target address) = (self formatOf: #UndefinedObject).
 	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace falseObject target address) = (self formatOf: #False).
 	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace trueObject target address) = (self formatOf: #True).
+]
+
+{ #category : #'writing-image' }
+PBImageBuilderGeneric >> writeImage [
+	
+	[[ espellBackend objectMemory flushNewSpace. ]
+		on: Halt
+		do: [:ex|
+			(#(#fullGC #compactImage  #doScavenge:) includes: ex signalerContext sender selector)
+				ifTrue: [ex resume]
+				ifFalse: [ex pass]]] on: AssertionFailure do: [ :e |
+				((e signalerContext sender method selector == #assert:)
+					and: [ e signalerContext sender sender method selector = #mapStackPages ])
+						ifTrue: [ e resume ]
+						ifFalse: [ e pass ]].
+
+	self freeForwarders.
+	self compactImage.
+	self reportSizes.
+
+	self writeSnapshot: imageFileReference fullName ofTransformedImage: espellBackend simulator objectMemory headerFlags: 0 screenSize: 0.
+	self inform: 'Image written in: ', imageFileReference fullName
+
+]
+
+{ #category : #'writing-image' }
+PBImageBuilderGeneric >> writeImageIn: aFileReference [ 
+	imageFileReference := aFileReference.	
+	self writeImage
+]
+
+{ #category : #'writing image' }
+PBImageBuilderGeneric >> writeSnapshot: imageFileName ofTransformedImage: spurHeap headerFlags: headerFlags screenSize: screenSizeInteger [
+	"The bootstrapped image typically contains a few big free chunks and one huge free chunk.
+	 Test snapshot writing and loading by turning the largest non-huge chunks into segment bridges
+	 and saving."
+	| penultimate ultimate sim |
+"	[ spurHeap  flushNewSpace. ]
+		on: Halt
+		do: [:ex|"
+			"suppress halts from the usual suspects (development time halts)"	
+"			(#(#fullGC #compactImage  #doScavenge:) includes: ex signalerContext sender selector)
+				ifTrue: [ex resume]
+				ifFalse: [ex pass]]."
+	sim := spurHeap coInterpreter.
+	sim bootstrapping: true.
+	spurHeap segmentManager prepareForSnapshot.
+	spurHeap
+		setEndOfMemory: spurHeap endOfMemory + spurHeap bridgeSize. "hack; initializeInterpreter: cuts it back by bridgeSize"
+	sim initializeInterpreter: 0;
+		setImageHeaderFlagsFrom: headerFlags;
+		setSavedWindowSize: (800<<16)+600;
+		setDisplayForm: nil.
+	spurHeap allOldSpaceEntitiesDo: [:e| penultimate := ultimate. ultimate := e].
+	"Check that we've left behind the old, pre-pigCompact segmented save"
+	self assert: (spurHeap isFreeObject: penultimate) not.
+	spurHeap checkFreeSpace.
+	spurHeap runLeakCheckerForFullGC.
+	sim bereaveAllMarriedContextsForSnapshotFlushingExternalPrimitivesIf: true.
+	sim imageName: imageFileName.
+	sim writeImageFileIO.
+	Transcript cr; show: 'Done!'
 ]
