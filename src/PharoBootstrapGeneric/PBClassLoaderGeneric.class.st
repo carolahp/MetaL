@@ -64,7 +64,7 @@ PBClassLoaderGeneric >> classNamed: aString [
 { #category : #'class-creation' }
 PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 
-	| newBehavior code |
+	| newBehavior |
 	(self isFullyLoadedClassNamed: aClassDefinition name) ifTrue: [ ^ self ].
 	aClassDefinition isBehavior ifTrue: [
 		"We ensure a class with that name already exists"
@@ -182,7 +182,7 @@ PBClassLoaderGeneric >> initializeClassPool: aClassName [
 	| definition class classPool classVariableBindings |
 	definition := self systemDefinitionAt: aClassName.
 	classVariableBindings := definition classVarNames collect: [ :each | | classVar |
-		classVar := (self builder remoteClass: #ClassVariable) new.
+		classVar := (self builder remoteClass: #ClassVariable) basicNew asRemoteAssociation.
 		classVar key: each ].
 	class := self bootstrapEnvironmentAt: aClassName.
 	classPool := self localArrayAsRemoteDictionary: classVariableBindings.

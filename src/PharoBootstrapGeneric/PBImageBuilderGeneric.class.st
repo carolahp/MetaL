@@ -95,6 +95,12 @@ PBImageBuilderGeneric >> arrayClassIndex [
 	^ self objectMemory arrayClassIndexPun
 ]
 
+{ #category : #'temporal for remove' }
+PBImageBuilderGeneric >> at: aString ifAbsent: aBlockClosure [ 
+	"returns nil because this method is used to get CompiledMethod for generating Compiled Method instances durin the bootstrap"
+	^ aBlockClosure value
+]
+
 { #category : #bindings }
 PBImageBuilderGeneric >> bindingOf: aName [
 	^ self bootstrapEnvironment bindingOf: aName 
@@ -185,13 +191,20 @@ PBImageBuilderGeneric >> createFalse [
 PBImageBuilderGeneric >> createInitialObjects [
 	" Initialize globals in the bootstrap environment "
 	self initializeGlobals.
-	classLoader initializeClassPools.
 	
+	"bootstrapEnvironment at: #Bootstrapping put: self objectSpace trueObject."
+	classLoader initializeClassPools.
+	self halt.
 	" Create and fill remote system dictionary with the contents of the local bootstrap environment"
 	self objectSpace systemDictionary withSystemDictionary: (self remoteClass: #SystemDictionary) new.
 	bootstrapEnvironment associationsDo: [ :assoc | self objectSpace systemDictionary at: assoc key put: assoc value ].
 	self objectSpace systemDictionary at: #Processor put: self objectSpace nilObject.
 	self objectSpace systemDictionary at: #Undeclared put: (self remoteClass: #Dictionary) new.
+	
+	bootstrapEnvironment at: #Processor put: self objectSpace nilObject.
+	bootstrapEnvironment at: #Undeclared put: (self remoteClass: #Dictionary) new.
+	
+	self halt.
 	self bootstrapInterpreter evaluateCode: 'PCString initialize.'.
 	"self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ]."
 ]
@@ -301,7 +314,9 @@ PBImageBuilderGeneric >> createVMStubs [
 	objectSpace backend processorAssociation
 		value: (self createStubForClassNamed: #ProcessorScheduler) basicNew.
 	objectSpace backend
-		specialSelectors: ((self classNamed: #Array) basicNew: 64)
+		specialSelectors: ((self classNamed: #Array) basicNew: 64).
+	self flag: 'owner custom code, replace by hook'.
+	self createStubForClassNamed: #ProtoObject
 ]
 
 { #category : #debugging }
