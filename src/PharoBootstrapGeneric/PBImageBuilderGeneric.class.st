@@ -194,7 +194,6 @@ PBImageBuilderGeneric >> createInitialObjects [
 	
 	"bootstrapEnvironment at: #Bootstrapping put: self objectSpace trueObject."
 	classLoader initializeClassPools.
-	self halt.
 	" Create and fill remote system dictionary with the contents of the local bootstrap environment"
 	self objectSpace systemDictionary withSystemDictionary: (self remoteClass: #SystemDictionary) new.
 	bootstrapEnvironment associationsDo: [ :assoc | self objectSpace systemDictionary at: assoc key put: assoc value ].
@@ -204,7 +203,6 @@ PBImageBuilderGeneric >> createInitialObjects [
 	bootstrapEnvironment at: #Processor put: self objectSpace nilObject.
 	bootstrapEnvironment at: #Undeclared put: (self remoteClass: #Dictionary) new.
 	
-	self halt.
 	self bootstrapInterpreter evaluateCode: 'PCString initialize.'.
 	"self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ]."
 ]
