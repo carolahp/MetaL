@@ -84,7 +84,7 @@ PBBootstrapGeneric >> installProcess [
 		withTemps: #().
 
 	
-	association := (builder classNamed: #Association) new
+	association := (builder classNamed: #Association) new asRemoteAssociation
 		key: builder objectSpace nilObject;
 		value: (builder bootstrapEnvironmentAt: #Processor);
 		yourself.
