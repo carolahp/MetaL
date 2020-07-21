@@ -37,6 +37,8 @@ PBMethodCompilerGeneric >> createNewMethod: aMethodDefinition [
 { #category : #'building-methods' }
 PBMethodCompilerGeneric >> methodsFromDefinition: aBehaviorDefinition [
 	"Get all the methods we consider we want from the current environment and return a copy, binded to the new class"
-	^ aBehaviorDefinition localMethods 
+	
+	^ (aBehaviorDefinition localMethods
+		reject: [ :m | m installable not ]) 
 		collect: [ :m | self createNewMethod: m ].
 ]
