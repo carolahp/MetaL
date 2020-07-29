@@ -362,8 +362,9 @@ PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded
 	self fullyLoaded at: className put: aBoolean.
 	aBoolean ifTrue: [ 
 		"we register the installed class in the remote system dictionary only if it's the fully loaded version"
-		self builder objectSpace systemDictionary at: definition name put: aClassMirror.
-		self builder objectSpace systemDictionary at: definition metaclass name put: aClassMirror basicClass.
+		(self systemDefinition hookRegisterClass: aClassMirror named: definition name) evaluate
+		"self builder objectSpace systemDictionary at: definition name put: aClassMirror.
+		self builder objectSpace systemDictionary at: definition metaclass name put: aClassMirror basicClass."
 		 ]
 ]
 

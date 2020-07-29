@@ -189,21 +189,30 @@ PBImageBuilderGeneric >> createFalse [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createInitialObjects [
+	| remoteSystemDictionary |
 	" Initialize globals in the bootstrap environment "
 	self initializeGlobals.
-	
-	"bootstrapEnvironment at: #Bootstrapping put: self objectSpace trueObject."
 	classLoader initializeClassPools.
-	" Create and fill remote system dictionary with the contents of the local bootstrap environment"
-	self objectSpace systemDictionary withSystemDictionary: (self remoteClass: #SystemDictionary) new.
-	bootstrapEnvironment associationsDo: [ :assoc | self objectSpace systemDictionary at: assoc key put: assoc value ].
-	self objectSpace systemDictionary at: #Processor put: self objectSpace nilObject.
-	self objectSpace systemDictionary at: #Undeclared put: (self remoteClass: #Dictionary) new.
+	" create the remote systemDictionary by evaluating a hook, or by creating an empty dictionary if the hook is not set "
+	remoteSystemDictionary := 
+		(self systemDefinition hookNewSystemDictionary) evaluate
+			ifNil: [remoteSystemDictionary := (self remoteClass: #SystemDictionary) new].
+	" set the objectSpace reference to the remote systemDictionary "
+	self objectSpace systemDictionary withSystemDictionary: remoteSystemDictionary.
+	" update the bootstrapEnvironment associations according to the contents of the new systemDictionary "
+	objectSpace systemDictionary associationsDo: [ :assoc | 
+		bootstrapEnvironment at: assoc key asRemoteByteString asLocalByteString asSymbol put: assoc value ].
+	" complete the objectSpace systemDictionary with the contents of the bootstrapEnvironment "
+	"bootstrapEnvironment associationsDo: [ :assoc | self objectSpace systemDictionary at: assoc key put: assoc value ]."
 	
+	"self objectSpace systemDictionary at: #Processor put: self objectSpace nilObject.
+	self objectSpace systemDictionary at: #Undeclared put: (self remoteClass: #Dictionary) new."
+	
+	" set globals required by bootstrap "
 	bootstrapEnvironment at: #Processor put: self objectSpace nilObject.
 	bootstrapEnvironment at: #Undeclared put: (self remoteClass: #Dictionary) new.
 	
-	self bootstrapInterpreter evaluateCode: 'PCString initialize.'.
+	self systemDefinition hookCreateInitialObjects evaluate
 	"self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ]."
 ]
 
@@ -383,7 +392,7 @@ PBImageBuilderGeneric >> flushNewSpace [
 	self prepareSimulatorForExecution.
 ]
 
-{ #category : #'image-initialization' }
+{ #category : #'initializing image' }
 PBImageBuilderGeneric >> followForwardingPointers [
 	| newHeap |
 	newHeap := espellBackend objectMemory.
@@ -475,11 +484,7 @@ PBImageBuilderGeneric >> initializeGlobals [
 
 { #category : #'special objects array' }
 PBImageBuilderGeneric >> initializeSpecialObjectArray [
-	objectSpace specialObjectsArray: self newSpecialObjectsArray.
-
-	self bootstrapInterpreter
-		evaluateCode: 'PCSystem specialObjectsArray: newArray.'
-		withTemps: { 'newArray' -> objectSpace specialObjectsArray }.
+	objectSpace specialObjectsArray: self newSpecialObjectsArray
 ]
 
 { #category : #'method installing' }
@@ -497,7 +502,7 @@ PBImageBuilderGeneric >> installMethod: anEP2RemoteCompiledMethod inBehavior: an
 PBImageBuilderGeneric >> installMethods [
 	
 	| definitions total |
-	definitions := self systemDefinition allClassesAndTraits sorted: [ :a :b | a name < b name ].
+	definitions := (self systemDefinition allClassesAndTraits select: #isInstallable) sorted: [ :a :b | a name < b name ].
 	total := definitions size.
 	definitions withIndexDo: [ :aClassDefinition :index |
 		self installMethodsInBehaviorDefinition: aClassDefinition prefixed: (index printPaddedWith: $0 to: 3), '/' , total asString.

@@ -89,14 +89,13 @@ PBBootstrapGeneric >> installProcess [
 		value: (builder bootstrapEnvironmentAt: #Processor);
 		yourself.
 	
-	builder objectSpace backend processorAssociation: association .
-	process := builder objectSpace createProcessWithPriority: 3 doing: 'PCSystem start' withTemps: #().
+	builder objectSpace backend processorAssociation: association.
+	
+	process := builder objectSpace createProcessWithPriority: 3 doing: builder systemDefinition hookMainProcess code withTemps: #().
  	builder objectSpace installAsActiveProcess: process withProcessor: (builder bootstrapEnvironment at: #Processor).
 	
-	builder bootstrapInterpreter
-		evaluateCode: 'PCSystem specialObjectsArray: newArray.'
-		withTemps: { 'newArray' -> builder objectSpace backend specialObjectsArray }.
-
+	(builder systemDefinition hookSetSpecialObjectsArray: builder objectSpace backend specialObjectsArray) evaluate.
+	
 	builder followForwardingPointers.
 
 	self inform: 'Image Generated successfully'
