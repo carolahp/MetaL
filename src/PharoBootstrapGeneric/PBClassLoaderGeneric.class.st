@@ -185,7 +185,8 @@ PBClassLoaderGeneric >> initializeClassPool: aClassName [
 		classVar := (self builder remoteClass: #ClassVariable) basicNew asRemoteAssociation.
 		classVar key: each ].
 	class := self bootstrapEnvironmentAt: aClassName.
-	classPool := self localArrayAsRemoteDictionary: classVariableBindings.
+	
+	classPool := (classVariableBindings asRemoteObjectInObjectSpace: builder objectSpace) asRemoteArray asDictionary.
 	
 	"Force the creation of the symbol using the object space class table." 
 	self flag: #bug. "If we do not use name:, we duplicate symbols"
@@ -231,7 +232,8 @@ PBClassLoaderGeneric >> loadClassNamed: aString [
 ]
 
 { #category : #'instance-creation' }
-PBClassLoaderGeneric >> localArrayAsRemoteDictionary: aCollection [ 
+PBClassLoaderGeneric >> localArrayAsRemoteDictionary: aCollection [
+	self deprecated: 'use EP2RemoteArray>>asDictionary instead'.
 	^ builder bootstrapInterpreter
 		evaluateCode: 'aClassVariableNamesCollection asDictionary'
 		withTemps: { 

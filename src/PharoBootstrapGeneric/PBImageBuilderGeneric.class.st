@@ -196,7 +196,7 @@ PBImageBuilderGeneric >> createInitialObjects [
 	" create the remote systemDictionary by evaluating a hook, or by creating an empty dictionary if the hook is not set "
 	remoteSystemDictionary := 
 		(self systemDefinition hookNewSystemDictionary) evaluate
-			ifNil: [remoteSystemDictionary := (self remoteClass: #SystemDictionary) new].
+			ifNil: [remoteSystemDictionary := (self remoteClass: #SystemDictionary) new ].
 	" set the objectSpace reference to the remote systemDictionary "
 	self objectSpace systemDictionary withSystemDictionary: remoteSystemDictionary.
 	" update the bootstrapEnvironment associations according to the contents of the new systemDictionary "
@@ -210,7 +210,7 @@ PBImageBuilderGeneric >> createInitialObjects [
 	
 	" set globals required by bootstrap "
 	bootstrapEnvironment at: #Processor put: self objectSpace nilObject.
-	bootstrapEnvironment at: #Undeclared put: (self remoteClass: #Dictionary) new.
+	bootstrapEnvironment at: #Undeclared put: (EP2RemoteDictionary newWithBackend: espellBackend).
 	
 	self systemDefinition hookCreateInitialObjects evaluate
 	"self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ]."
@@ -272,6 +272,7 @@ PBImageBuilderGeneric >> createVMStubs [
 	objectSpace falseObject: objectSpace falseObject.
 	objectSpace trueObject: objectSpace trueObject.
 	self classLoader resetClassIndex.
+	
 	objectSpace nilObject
 		setClass: (self createStubForClassNamed: #UndefinedObject).
 	objectSpace falseObject
