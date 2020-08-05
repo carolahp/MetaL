@@ -286,7 +286,7 @@ PBImageBuilderGeneric >> createVMStubs [
 	objectSpace backend
 		byteSymbolClass: (self createStubForClassNamed: #Symbol).
 	objectSpace backend
-		byteStringClass: (self createStubForClassNamed: #String).
+		byteStringClass: (self createStubForClassNamed: #ByteString).
 	objectSpace backend
 		byteArrayClass: (self createStubForClassNamed: #ByteArray).
 	objectSpace backend
