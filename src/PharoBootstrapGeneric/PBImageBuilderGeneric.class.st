@@ -192,7 +192,8 @@ PBImageBuilderGeneric >> createInitialObjects [
 	| remoteSystemDictionary |
 	" Initialize globals in the bootstrap environment "
 	self initializeGlobals.
-	classLoader initializeClassPools.
+	self systemDefinition hookInitializeClassStubs.
+	
 	" create the remote systemDictionary by evaluating a hook, or by creating an empty dictionary if the hook is not set "
 	remoteSystemDictionary := 
 		(self systemDefinition hookNewSystemDictionary) evaluate
@@ -231,7 +232,7 @@ PBImageBuilderGeneric >> createNil [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createStubForClassNamed: aString [ 
-	
+	self deprecated: 'use methods in behaviors metamodel'.
 	^ self classLoader createStubForClassNamed: aString
 ]
 
@@ -272,59 +273,59 @@ PBImageBuilderGeneric >> createVMStubs [
 	objectSpace falseObject: objectSpace falseObject.
 	objectSpace trueObject: objectSpace trueObject.
 	self classLoader resetClassIndex.
-	
+	self systemDefinition hookInstallStubs.
 	objectSpace nilObject
-		setClass: (self createStubForClassNamed: #UndefinedObject).
+		setClass: (self classNamed: #UndefinedObject).
 	objectSpace falseObject
-		setClass: (self createStubForClassNamed: #False).
+		setClass: (self classNamed: #False).
 	objectSpace trueObject
-		setClass: (self createStubForClassNamed: #True).
+		setClass: (self classNamed: #True).
 	objectSpace backend
-		smallIntegerClass: (self createStubForClassNamed: #SmallInteger).
+		smallIntegerClass: (self classNamed: #SmallInteger).
 	objectSpace backend
-		characterClass: (self createStubForClassNamed: #Character).
+		characterClass: (self classNamed: #Character).
 	objectSpace backend
-		byteSymbolClass: (self createStubForClassNamed: #Symbol).
+		byteSymbolClass: (self classNamed: #Symbol).
 	objectSpace backend
-		byteStringClass: (self createStubForClassNamed: #ByteString).
+		byteStringClass: (self classNamed: #ByteString).
 	objectSpace backend
-		byteArrayClass: (self createStubForClassNamed: #ByteArray).
+		byteArrayClass: (self classNamed: #ByteArray).
 	objectSpace backend
-		associationClass: (self createStubForClassNamed: #Association).
+		associationClass: (self classNamed: #Association).
 	objectSpace backend
-		arrayClass: (self createStubForClassNamed: #Array).
+		arrayClass: (self classNamed: #Array).
 	objectSpace backend
 		symbolTableClass: objectSpace backend byteSymbolClass.
 	objectSpace backend
-		largeNegativeIntegerClass: (self createStubForClassNamed: #LargeNegativeInteger).
+		largeNegativeIntegerClass: (self classNamed: #LargeNegativeInteger).
 	objectSpace backend
-		largePositiveIntegerClass: (self createStubForClassNamed: #LargePositiveInteger).
+		largePositiveIntegerClass: (self classNamed: #LargePositiveInteger).
 	objectSpace backend
-		methodClass: (self createStubForClassNamed: #CompiledMethod).
+		methodClass: (self classNamed: #CompiledMethod).
 	objectSpace backend
-		floatClass: (self createStubForClassNamed: #Float).
+		floatClass: (self classNamed: #Float).
 	objectSpace backend
-		contextClass: (self createStubForClassNamed: #Context).
+		contextClass: (self classNamed: #Context).
 	objectSpace backend
-		processClass: (self createStubForClassNamed: #Process).
+		processClass: (self classNamed: #Process).
 	objectSpace backend
-		blockClass: (self createStubForClassNamed: #BlockClosure).
+		blockClass: (self classNamed: #BlockClosure).
 	objectSpace backend
-		messageClass: (self createStubForClassNamed: #Message).
+		messageClass: (self classNamed: #Message).
 
 	"Point is required in the special objects array because it is used to instantiate point objects faster.
 	If we do not put it here, the VM will crash.
 	Lots of tests in kernel use it."
 	objectSpace backend
-		pointClass: (self createStubForClassNamed: #Point).
+		pointClass: (self classNamed: #Point).
 	objectSpace backend
 		processorAssociation: (self classNamed: #Association) basicNew.
 	objectSpace backend processorAssociation
-		value: (self createStubForClassNamed: #ProcessorScheduler) basicNew.
+		value: (self classNamed: #ProcessorScheduler) basicNew.
 	objectSpace backend
 		specialSelectors: ((self classNamed: #Array) basicNew: 64).
 	self flag: 'owner custom code, replace by hook'.
-	self createStubForClassNamed: #ProtoObject
+	self classNamed: #ProtoObject
 ]
 
 { #category : #debugging }

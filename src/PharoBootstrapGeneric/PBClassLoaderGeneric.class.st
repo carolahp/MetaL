@@ -204,10 +204,10 @@ PBClassLoaderGeneric >> initializeClassPool: aClassName [
 
 { #category : #'initializing-classes' }
 PBClassLoaderGeneric >> initializeClassPools [
-
+	self deprecated: 'use methods in the metamodel behaviors'.
 	"shouldInitializeClassPool := true."
 	self bootstrapEnvironment keysDo: [ :name | | definition |
-			definition := self systemDefinition at: name.
+			definition := self systemDefinition classNamed: name.
 			(definition isNotNil and: [definition isBehavior and: [definition isMetaclass not]]) 
 				ifTrue: [ self initializeClassPool: definition name ]	
 		 ]
