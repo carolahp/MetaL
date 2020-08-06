@@ -342,6 +342,18 @@ PBImageBuilderGeneric >> debuggerInterpreter [
 	^ debuggerInterpreter
 ]
 
+{ #category : #initializing }
+PBImageBuilderGeneric >> destroyBootstrapEnvironment [
+	
+	espellBackend := nil.
+	bootstrapEnvironment := nil.
+	objectSpace := nil.
+	classLoader := nil.
+	bootstrapInterpreter := nil.
+	debuggerInterpreter := nil.
+	
+]
+
 { #category : #'accessing error messages' }
 PBImageBuilderGeneric >> errorMessagesArray [
 
@@ -696,6 +708,11 @@ PBImageBuilderGeneric >> test01FirstObjectsStubs [
 	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace nilObject target address) = (self formatOf: #UndefinedObject).
 	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace falseObject target address) = (self formatOf: #False).
 	self assert: (self objectSpace backend simulator objectMemory formatOf: self objectSpace trueObject target address) = (self formatOf: #True).
+]
+
+{ #category : #unloading }
+PBImageBuilderGeneric >> unload [
+	self destroyBootstrapEnvironment.
 ]
 
 { #category : #'writing-image' }
