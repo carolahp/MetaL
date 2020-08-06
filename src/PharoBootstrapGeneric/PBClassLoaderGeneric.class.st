@@ -87,25 +87,23 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 PBClassLoaderGeneric >> createClassStubForDefinition: aRGBehavior [
 	
 	| class metaclass |	
-	metaclass := self metaclassClass basicNew asRemoteClass.
+	metaclass := self metaclassClass basicNew asRemoteMetaclass.
 	metaclass format: aRGBehavior classSide format.
+	self registerClass: metaclass named: aRGBehavior metaclass name.
 	
 	class := metaclass basicNew asRemoteClass.
 	class format: aRGBehavior format.
+	self registerClass: class named: aRGBehavior name.
+	self assert: class basicClass = metaclass .
+	
 	^ class
 ]
 
 { #category : #'stubs-class-creation' }
-PBClassLoaderGeneric >> createStubForClass: aRGBehavior [ 
-
-	| stub |
+PBClassLoaderGeneric >> createStubForClass: aRGBehavior [
 	^ aRGBehavior isBehavior
-		ifTrue: [
-			stub := self createClassStubForDefinition: aRGBehavior.
-			self registerClass: stub named: aRGBehavior name.
-			
-			stub ]
-		ifFalse: [ self error: 'Impossible to create class stub! The argument is not a behavior' ]
+		ifTrue: [ self createClassStubForDefinition: aRGBehavior ]
+		ifFalse: [ self error: 'Error while creating the class stub!' ]
 ]
 
 { #category : #'stubs-class-creation' }
@@ -246,47 +244,47 @@ PBClassLoaderGeneric >> map: aClassMirror with: aDefinition [
 
 	"We create a mapping between the real classes and their definitions for later"
 	
-	| classSideMirror |
 	self assert: (aClassMirror target isKindOf: EP2Handle).
 	(aClassMirror backend simulator objectMemory classTableRootObj) ifNotNil: [
 		self assert: aClassMirror target asClassIndexHandle address notNil.
 		aClassMirror target: (aClassMirror target asClassIndexHandle) ].
 
 	addressDefinitionMap at: aClassMirror target address put: aDefinition.
-	aDefinition propertyNamed: #address put: aClassMirror target address.
-
-	classSideMirror := aClassMirror basicClass.
-	"only valid for Spur simulator bootstrap by now"
-	(aClassMirror backend simulator objectMemory classTableRootObj) ifNotNil: [
-		self assert: classSideMirror target asClassIndexHandle address notNil.
-		classSideMirror target: (classSideMirror target asClassIndexHandle) ].
-	
-	addressDefinitionMap at: classSideMirror target address put: aDefinition classSide.
-	aDefinition classSide propertyNamed: #address put: classSideMirror target address
+	aDefinition propertyNamed: #address put: aClassMirror target address
 ]
 
 { #category : #'stubs-class-creation' }
 PBClassLoaderGeneric >> metaclassClass [
-	
 	"Base case for recursion on class creation.
 	Ok, so here we really go down and create the metaclass from nothing. We will use this metaclass to create all the others"
+
 	| aRGBehavior theNewMetaclass theNewMetaclassClass metaclassIndex classIndex |
 	" If the metaclass was already created, it will be found in the bootstrapEnvironment dictionary "
-	(self bootstrapEnvironmentAt: #Metaclass) ifNotNil: [ :aClass | ^ aClass ].
-	
+	(self bootstrapEnvironmentAt: #Metaclass)
+		ifNotNil: [ :aClass | ^ aClass ].
+
 	" We need to create the metaclass and its respective metaclass (the metaclass class) "
 	aRGBehavior := self systemDefinitionAt: #Metaclass.
-	
 	metaclassIndex := self newClassIndex.
 	classIndex := self newClassIndex.
-	
+
 	"This is Metaclass"
-	theNewMetaclass := self createStubForClassNamed: aRGBehavior name metaclassIndex: metaclassIndex newClassIndex: classIndex.
-	
-	"This is Metaclass class"
-	theNewMetaclassClass := self createStubForClassNamed: aRGBehavior metaclass name metaclassIndex: classIndex newClassIndex: metaclassIndex.
-	
+	theNewMetaclass := self
+		createStubForClassNamed: aRGBehavior name
+		metaclassIndex: metaclassIndex
+		newClassIndex: classIndex.
 	self registerClass: theNewMetaclass named: aRGBehavior name.
+
+	"This is Metaclass class"
+	theNewMetaclassClass := (self
+		createStubForClassNamed: aRGBehavior metaclass name
+		metaclassIndex: classIndex
+		newClassIndex: metaclassIndex) asRemoteMetaclass.
+	self
+		registerClass: theNewMetaclassClass
+		named: aRGBehavior metaclass name.
+		
+	self assert: theNewMetaclass basicClass = theNewMetaclassClass .
 	^ theNewMetaclass
 ]
 
@@ -354,6 +352,7 @@ PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded
 	
 	"We create a mapping between the real classes and their definitions for later"
 	self map: aClassMirror with: definition.
+	self map: aClassMirror basicClass with: definition metaclass.
 	
 	"We say the simulator that this class is a root, possible becomes can come into it. THIS IS ONLY VALID FOR SPUR SIMULATOR BOOTSTRAP. REFACTOR ME".
 	self flag: #refactorMe.
