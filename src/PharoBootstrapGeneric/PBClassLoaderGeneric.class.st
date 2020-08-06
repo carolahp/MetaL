@@ -258,34 +258,12 @@ PBClassLoaderGeneric >> metaclassClass [
 	"Base case for recursion on class creation.
 	Ok, so here we really go down and create the metaclass from nothing. We will use this metaclass to create all the others"
 
-	| aRGBehavior theNewMetaclass theNewMetaclassClass metaclassIndex classIndex |
+	| aRGBehavior  |
 	" If the metaclass was already created, it will be found in the bootstrapEnvironment dictionary "
 	(self bootstrapEnvironmentAt: #Metaclass)
 		ifNotNil: [ :aClass | ^ aClass ].
-
-	" We need to create the metaclass and its respective metaclass (the metaclass class) "
-	aRGBehavior := self systemDefinitionAt: #Metaclass.
-	metaclassIndex := self newClassIndex.
-	classIndex := self newClassIndex.
-
-	"This is Metaclass"
-	theNewMetaclass := self
-		createStubForClassNamed: aRGBehavior name
-		metaclassIndex: metaclassIndex
-		newClassIndex: classIndex.
-	self registerClass: theNewMetaclass named: aRGBehavior name.
-
-	"This is Metaclass class"
-	theNewMetaclassClass := (self
-		createStubForClassNamed: aRGBehavior metaclass name
-		metaclassIndex: classIndex
-		newClassIndex: metaclassIndex) asRemoteMetaclass.
-	self
-		registerClass: theNewMetaclassClass
-		named: aRGBehavior metaclass name.
-		
-	self assert: theNewMetaclass basicClass = theNewMetaclassClass .
-	^ theNewMetaclass
+	^ self systemDefinition hookCreateMetaclassStubWithClassLoader: self.
+	
 ]
 
 { #category : #'class-registration' }
