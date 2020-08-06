@@ -192,29 +192,29 @@ PBImageBuilderGeneric >> createInitialObjects [
 	| remoteSystemDictionary |
 	" Initialize globals in the bootstrap environment "
 	self initializeGlobals.
+	self systemDefinition hookInitalizeGlobals evaluate.
 	self systemDefinition hookInitializeClassStubs.
-	
+
 	" create the remote systemDictionary by evaluating a hook, or by creating an empty dictionary if the hook is not set "
-	remoteSystemDictionary := 
-		(self systemDefinition hookNewSystemDictionary) evaluate
-			ifNil: [remoteSystemDictionary := (self remoteClass: #SystemDictionary) new ].
+	remoteSystemDictionary := self systemDefinition
+		hookNewSystemDictionary evaluate
+		ifNil: [ remoteSystemDictionary := (self remoteClass: #SystemDictionary) new ].
 	" set the objectSpace reference to the remote systemDictionary "
-	self objectSpace systemDictionary withSystemDictionary: remoteSystemDictionary.
+	self objectSpace systemDictionary
+		withSystemDictionary: remoteSystemDictionary.
 	" update the bootstrapEnvironment associations according to the contents of the new systemDictionary "
-	objectSpace systemDictionary associationsDo: [ :assoc | 
-		bootstrapEnvironment at: assoc key asRemoteByteString asLocalByteString asSymbol put: assoc value ].
-	" complete the objectSpace systemDictionary with the contents of the bootstrapEnvironment "
-	"bootstrapEnvironment associationsDo: [ :assoc | self objectSpace systemDictionary at: assoc key put: assoc value ]."
-	
-	"self objectSpace systemDictionary at: #Processor put: self objectSpace nilObject.
-	self objectSpace systemDictionary at: #Undeclared put: (self remoteClass: #Dictionary) new."
-	
+	objectSpace systemDictionary
+		associationsDo: [ :assoc | 
+			bootstrapEnvironment
+				at: assoc key asRemoteByteString asLocalByteString asSymbol
+				put: assoc value ].
+
 	" set globals required by bootstrap "
 	bootstrapEnvironment at: #Processor put: self objectSpace nilObject.
-	bootstrapEnvironment at: #Undeclared put: (EP2RemoteDictionary newWithBackend: espellBackend).
-	
+	bootstrapEnvironment
+		at: #Undeclared
+		put: (EP2RemoteDictionary newWithBackend: espellBackend).
 	self systemDefinition hookCreateInitialObjects evaluate
-	"self languageDefinition instructionsToCreateInitialObjects do: [:instruction | instruction evaluate ]."
 ]
 
 { #category : #'bootstrap1-stubs' }
