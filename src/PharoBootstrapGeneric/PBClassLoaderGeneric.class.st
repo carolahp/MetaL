@@ -63,24 +63,33 @@ PBClassLoaderGeneric >> classNamed: aString [
 
 { #category : #'class-creation' }
 PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
-
 	| newBehavior |
-	(self isFullyLoadedClassNamed: aClassDefinition name) ifTrue: [ ^ self ].
-	aClassDefinition isBehavior ifTrue: [
-		"We ensure a class with that name already exists"
-		self bootstrapEnvironment at: aClassDefinition name ifAbsent: [ self createStubForClassNamed: aClassDefinition name ]].
+	(self isFullyLoadedClassNamed: aClassDefinition name)
+		ifTrue: [ ^ self ].
 	
-	newBehavior := (self systemDefinition hookInstallClass: aClassDefinition) evaluate asRemoteClass.
+	aClassDefinition isBehavior
+		ifTrue: [ "We ensure a class with that name already exists"
+			self bootstrapEnvironment
+				at: aClassDefinition name
+				ifAbsent: [ 
+					self createStubForClassNamed: aClassDefinition name] ].
 	
-	aClassDefinition isBehavior ifTrue: [ 
-		self registerClass: newBehavior asRemoteClass named: aClassDefinition name fullyLoaded: true.
-	] ifFalse: [
-		self registerTrait: newBehavior asRemoteTrait named: aClassDefinition name fullyLoaded: true.
-	].
+	newBehavior := (self systemDefinition
+		hookInstallClass: aClassDefinition) evaluate asRemoteClass.
 	
-	(self systemDefinition hookInitializeMethodDictionaryFor: newBehavior) evaluate.
+	self systemDefinition
+		hookRegisterClass: newBehavior
+		fromDefinition: aClassDefinition
+		withLoader: self.
+	 "we register the installed class in the remote system dictionary only if it's the fully loaded version"
+	(self systemDefinition
+				hookRegisterClass: newBehavior 
+				named: aClassDefinition name) evaluate. 
+	(self systemDefinition hookInitializeMethodDictionaryFor: newBehavior)
+		evaluate.
 	"we register the class by hand in the Smalltalk globals"
-	(self systemDefinition instructionRegisterInstalledBehaviorInGlobals: newBehavior) evaluate
+	(self systemDefinition
+		instructionRegisterInstalledBehaviorInGlobals: newBehavior) evaluate
 ]
 
 { #category : #'stubs-class-creation' }
@@ -89,11 +98,11 @@ PBClassLoaderGeneric >> createClassStubForDefinition: aRGBehavior [
 	| class metaclass |	
 	metaclass := self metaclassClass basicNew asRemoteMetaclass.
 	metaclass format: aRGBehavior classSide format.
-	self registerClass: metaclass named: aRGBehavior metaclass name.
+	self registerClass: metaclass definition: aRGBehavior metaclass fullyLoaded: false.
 	
 	class := metaclass basicNew asRemoteClass.
 	class format: aRGBehavior format.
-	self registerClass: class named: aRGBehavior name.
+	self registerClass: class definition: aRGBehavior fullyLoaded: false.
 	self assert: class basicClass = metaclass .
 	
 	^ class
@@ -269,14 +278,13 @@ PBClassLoaderGeneric >> metaclassClass [
 { #category : #'class-registration' }
 PBClassLoaderGeneric >> migrateOldClass: oldClass to: newClass [
 
-	| oldClassMetaclass oldClassAddress oldMetaclassAddress |
+	| oldClassAddress |
 	
 	oldClassAddress := oldClass target address.
-	oldMetaclassAddress := oldClass basicClass target address.		
 	
 	"We migrate the class pools"
-	oldClass asRemoteClass classPool isNilObject ifFalse: [
-		newClass asRemoteClass classPool: oldClass asRemoteClass classPool ].
+	oldClass classPool isNilObject ifFalse: [
+		newClass classPool: oldClass asRemoteClass classPool ].
 	
 	"We migrate the class instance variables"
 	"A class has at least 14 instances variables (cf class description, behavior) (this is for full Pharo). Starting from 15, we get user defined class instances variables."
@@ -284,15 +292,10 @@ PBClassLoaderGeneric >> migrateOldClass: oldClass to: newClass [
 		newClass instanceVariableAtIndex: index put: (oldClass instanceVariableAtIndex: index).
 	].
 
-	"We become the old class and metaclass into the new ones"
-	oldClassMetaclass := oldClass basicClass.
+	"We become the old class into the new one"
 	oldClass becomeInto: newClass.
-	oldClassMetaclass target == Metaclass
-		ifFalse:[ oldClassMetaclass becomeInto: newClass basicClass ].
 		
-	addressDefinitionMap removeKey: oldClassAddress.
-	addressDefinitionMap removeKey: oldMetaclassAddress.
-			
+	addressDefinitionMap removeKey: oldClassAddress		
 ]
 
 { #category : #'stubs-class-creation' }
@@ -304,47 +307,49 @@ PBClassLoaderGeneric >> newClassIndex [
 ]
 
 { #category : #'class-registration' }
+PBClassLoaderGeneric >> registerClass: aClassMirror definition: aRGObject fullyLoaded: aBoolean [
+	^ self registerClass: aClassMirror named: aRGObject name fullyLoaded: aBoolean
+
+]
+
+{ #category : #'class-registration' }
 PBClassLoaderGeneric >> registerClass: aClassMirror named: aString [ 
+	self deprecated: 'use registerClass:definition:fullyLoaded:'.
 	self registerClass: aClassMirror named: aString fullyLoaded: false
 ]
 
 { #category : #'class-registration' }
 PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded: aBoolean [
-
-	| definition metaclassName |
+	| definition |
+	
+	
 	definition := self systemDefinition classNamed: className.
-	metaclassName := definition classSide name.
 	
 	"If it existed before, we migrate its state"
-	((aClassMirror isStub not) and: (self bootstrapEnvironment includesKey: className))
-		ifTrue: [ 			
-			self migrateOldClass: (self bootstrapEnvironment at: className) to: aClassMirror.
-			 ]. 
-
+	(aClassMirror isStub not
+		and: (self bootstrapEnvironment includesKey: className))
+		ifTrue: [ self
+				migrateOldClass: (self bootstrapEnvironment at: className)
+				to: aClassMirror ].
 	self bootstrapEnvironment at: className put: aClassMirror.
-	self bootstrapEnvironment at: metaclassName put: aClassMirror basicClass.
 
-	"We register it and keep up to date our compact class index"	
-	aClassMirror compactClassIndex = 0 ifFalse: [ 
-		builder objectSpace backend compactClassAt: aClassMirror asClassMirror compactClassIndex put: aClassMirror ].
-	
+	"We register it and keep up to date our compact class index"
+	aClassMirror compactClassIndex = 0
+		ifFalse: [ builder objectSpace backend
+				compactClassAt: aClassMirror asClassMirror compactClassIndex
+				put: aClassMirror ].
+
 	"We create a mapping between the real classes and their definitions for later"
 	self map: aClassMirror with: definition.
-	self map: aClassMirror basicClass with: definition metaclass.
-	
-	"We say the simulator that this class is a root, possible becomes can come into it. THIS IS ONLY VALID FOR SPUR SIMULATOR BOOTSTRAP. REFACTOR ME".
+	"self map: aClassMirror basicClass with: definition metaclass."
+
+	"We say the simulator that this class is a root, possible becomes can come into it. THIS IS ONLY VALID FOR SPUR SIMULATOR BOOTSTRAP. REFACTOR ME"
 	self flag: #refactorMe.
 	builder objectSpace backend addExtraRoot: aClassMirror.
-	builder objectSpace backend addExtraRoot: aClassMirror classSide.
-	
+
 	"We reset the class map of the ast interpreter"
 	self fullyLoaded at: className put: aBoolean.
-	aBoolean ifTrue: [ 
-		"we register the installed class in the remote system dictionary only if it's the fully loaded version"
-		(self systemDefinition hookRegisterClass: aClassMirror named: definition name) evaluate
-		"self builder objectSpace systemDictionary at: definition name put: aClassMirror.
-		self builder objectSpace systemDictionary at: definition metaclass name put: aClassMirror basicClass."
-		 ]
+	
 ]
 
 { #category : #'class-registration' }
