@@ -77,12 +77,7 @@ PBBootstrapGeneric >> installProcess [
 	| association process |
 	builder initializeSpecialObjectArray.
 	
-	builder bootstrapInterpreter
-		evaluateCode:  '
-	Processor := PCProcessorScheduler basicNew.
-	Processor initProcessLists.'
-		withTemps: #().
-
+	builder systemDefinition hookInitializeProcessScheduler.
 	
 	association := (builder classNamed: #Association) new asRemoteAssociation
 		key: builder objectSpace nilObject;
