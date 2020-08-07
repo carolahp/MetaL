@@ -75,7 +75,7 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 					self createStubForClassNamed: aClassDefinition name] ].
 	
 	newBehavior := (self systemDefinition
-		hookInstallClass: aClassDefinition) evaluate asRemoteClass.
+		hookInstallClass: aClassDefinition) asRemoteClass.
 	
 	self systemDefinition
 		hookRegisterClass: newBehavior

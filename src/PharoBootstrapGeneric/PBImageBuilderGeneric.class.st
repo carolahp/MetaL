@@ -198,7 +198,7 @@ PBImageBuilderGeneric >> createInitialObjects [
 	" create the remote systemDictionary by evaluating a hook, or by creating an empty dictionary if the hook is not set "
 	remoteSystemDictionary := self systemDefinition
 		hookNewSystemDictionary evaluate
-		ifNil: [ remoteSystemDictionary := (self remoteClass: #SystemDictionary) new ].
+		ifNil: [ remoteSystemDictionary := (self remoteClass: #SystemDictionary) basicNew asRemoteDictionary ].
 	" set the objectSpace reference to the remote systemDictionary "
 	self objectSpace systemDictionary
 		withSystemDictionary: remoteSystemDictionary.
