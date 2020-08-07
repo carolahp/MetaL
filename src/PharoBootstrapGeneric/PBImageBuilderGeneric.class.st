@@ -508,6 +508,7 @@ PBImageBuilderGeneric >> installExtensionMethods [
 
 { #category : #'installing-methods' }
 PBImageBuilderGeneric >> installMethod: anEP2RemoteCompiledMethod inBehavior: anEP2RemoteClass [ 
+	self deprecated: 'use methods in behavior'.
 	(self systemDefinition hookInstallMethod: anEP2RemoteCompiledMethod inBehavior: anEP2RemoteClass) evaluate.
 	
 ]
@@ -515,18 +516,15 @@ PBImageBuilderGeneric >> installMethod: anEP2RemoteCompiledMethod inBehavior: an
 { #category : #'bootstrap3-methods' }
 PBImageBuilderGeneric >> installMethods [
 	
-	| definitions total |
-	definitions := (self systemDefinition allClassesAndTraits select: #isInstallable) sorted: [ :a :b | a name < b name ].
-	total := definitions size.
-	definitions withIndexDo: [ :aClassDefinition :index |
-		self installMethodsInBehaviorDefinition: aClassDefinition prefixed: (index printPaddedWith: $0 to: 3), '/' , total asString.
-	].
+	self systemDefinition hookInstallMethods.
+	
 	PBStepFinishedSignal emit: 'installed_methods'.
 ]
 
 { #category : #'bootstrap3-methods' }
 PBImageBuilderGeneric >> installMethodsInBehaviorDefinition: behaviorDefinition prefixed: aPrefix [
 	| behaviorMirror  |
+	self deprecated: 'use methods in behavior instead'.
 	behaviorMirror := bootstrapEnvironment at: behaviorDefinition name.
 	self
 		installMethodsInBehaviorMapping: behaviorDefinition
@@ -543,6 +541,7 @@ PBImageBuilderGeneric >> installMethodsInBehaviorDefinition: behaviorDefinition 
 { #category : #'bootstrap3-methods' }
 PBImageBuilderGeneric >> installMethodsInBehaviorMapping: aBehaviorMapping using: aMethodBuilder onMirror: mirror prefixed: aPrefix [
 	| newMethods theClass |
+	self deprecated: 'use methods in the model (behavior) instead'.
 	newMethods := (aMethodBuilder methodsFromDefinition: aBehaviorMapping) sorted: [ :a :b | a selector < b selector ].
 	theClass := (self classNamed: aBehaviorMapping theNonMetaClass name) asRemoteClass.
 	aBehaviorMapping isMeta ifTrue: [ theClass := theClass classSide ].

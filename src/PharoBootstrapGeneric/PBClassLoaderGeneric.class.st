@@ -79,8 +79,7 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 	
 	self systemDefinition
 		hookRegisterClass: newBehavior
-		fromDefinition: aClassDefinition
-		withLoader: self.
+		fromDefinition: aClassDefinition.
 	 "we register the installed class in the remote system dictionary only if it's the fully loaded version"
 	(self systemDefinition
 				hookRegisterClass: newBehavior 
