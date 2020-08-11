@@ -88,7 +88,8 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 		evaluate.
 	"we register the class by hand in the Smalltalk globals"
 	(self systemDefinition
-		instructionRegisterInstalledBehaviorInGlobals: newBehavior) evaluate
+		instructionRegisterInstalledBehaviorInGlobals: newBehavior) evaluate.
+	self systemDictionary at: aClassDefinition name put: newBehavior
 ]
 
 { #category : #'stubs-class-creation' }
@@ -375,4 +376,9 @@ PBClassLoaderGeneric >> systemDefinitionAt: aString [
 { #category : #'accessing-classes-definitions' }
 PBClassLoaderGeneric >> systemDefinitionAt: aString ifAbsent: aBlockClosure [ 
 	^ self builder systemDefinitionAt: aString ifAbsent: [ aBlockClosure value ]
+]
+
+{ #category : #accessing }
+PBClassLoaderGeneric >> systemDictionary [
+	^ self builder objectSpace systemDictionary
 ]
