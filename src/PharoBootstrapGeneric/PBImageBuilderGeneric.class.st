@@ -188,33 +188,59 @@ PBImageBuilderGeneric >> createFalse [
 ]
 
 { #category : #'bootstrap1-stubs' }
+PBImageBuilderGeneric >> createFirstObjectsStubs [
+	| specialObjectsArray |
+	"the first objects are created by hand, we don't use the language definition"
+	self createNil.
+	self createFalse.
+	self createTrue.
+	self test01FirstObjectsStubs.
+	
+	self allocateFreeLists.
+	self allocateClassTable.
+	
+	specialObjectsArray := self createStubInstanceOfArrayOfSize: 60.
+	objectSpace specialObjectsArray: specialObjectsArray.
+	objectSpace nilObject: objectSpace nilObject.
+	objectSpace falseObject: objectSpace falseObject.
+	objectSpace trueObject: objectSpace trueObject.
+	self classLoader resetClassIndex
+]
+
+{ #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createInitialObjects [
 	| remoteSystemDictionary |
 	" Initialize globals in the bootstrap environment "
+
 	self initializeGlobals.
 	self systemDefinition hookInitalizeGlobals evaluate.
 	self systemDefinition hookInitializeClassStubs.
-
 	" create the remote systemDictionary by evaluating a hook, or by creating an empty dictionary if the hook is not set "
 	remoteSystemDictionary := self systemDefinition
 		hookNewSystemDictionary evaluate
-		ifNil: [ remoteSystemDictionary := (EP2RemoteDictionary newWithBackend: espellBackend) asRemoteDictionary ].
+		ifNil: [ remoteSystemDictionary := (EP2RemoteDictionary
+				newWithBackend: espellBackend) asRemoteDictionary ].
 	" set the objectSpace reference to the remote systemDictionary "
 	self objectSpace systemDictionary
 		withSystemDictionary: remoteSystemDictionary.
-	" update the bootstrapEnvironment associations according to the contents of the new systemDictionary "
 	
+	"Adding essential globals to system dictionary"
+	"bootstrapEnvironment
+		associationsDo: [ :assoc | 			
+			objectSpace systemDictionary
+				at: assoc key
+				ifAbsentPut: assoc value ]."
+	
+	"update the bootstrapEnvironment associations according to the contents of the new systemDictionary "
 	objectSpace systemDictionary
 		associationsDo: [ :assoc | 
 			bootstrapEnvironment
 				at: assoc key asRemoteByteString asLocalByteString asSymbol
 				put: assoc value ].
-
-	" set globals required by bootstrap "
-	bootstrapEnvironment at: #Processor put: self objectSpace nilObject.
-	bootstrapEnvironment
-		at: #Undeclared
-		put: (EP2RemoteDictionary newWithBackend: espellBackend).
+	objectSpace systemDictionary at: #Processor ifAbsentPut: (bootstrapEnvironment at: #Processor).
+	objectSpace systemDictionary at: #Undeclared ifAbsentPut: (bootstrapEnvironment at: #Undeclared).
+	
+	
 	self systemDefinition hookCreateInitialObjects evaluate
 ]
 
@@ -257,74 +283,13 @@ PBImageBuilderGeneric >> createTrue [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createVMStubs [
-	| specialObjectsArray |
-	super trace: 'creating initial Objects needed by the VM'.
+	self createFirstObjectsStubs.
 	
-	self createNil.
-	self createFalse.
-	self createTrue.
-	self test01FirstObjectsStubs.
-	
-	self allocateFreeLists.
-	self allocateClassTable.
-	
-	specialObjectsArray := self createStubInstanceOfArrayOfSize: 60.
-	objectSpace specialObjectsArray: specialObjectsArray.
-	objectSpace nilObject: objectSpace nilObject.
-	objectSpace falseObject: objectSpace falseObject.
-	objectSpace trueObject: objectSpace trueObject.
-	self classLoader resetClassIndex.
 	self systemDefinition hookInstallStubs.
-	objectSpace nilObject
-		setClass: (self classNamed: #UndefinedObject).
-	objectSpace falseObject
-		setClass: (self classNamed: #False).
-	objectSpace trueObject
-		setClass: (self classNamed: #True).
-	objectSpace backend
-		smallIntegerClass: (self classNamed: #SmallInteger).
-	objectSpace backend
-		characterClass: (self classNamed: #Character).
-	objectSpace backend
-		byteSymbolClass: (self classNamed: #Symbol).
-	objectSpace backend
-		byteStringClass: (self classNamed: #ByteString).
-	objectSpace backend
-		byteArrayClass: (self classNamed: #ByteArray).
-	objectSpace backend
-		associationClass: (self classNamed: #Association).
-	objectSpace backend
-		arrayClass: (self classNamed: #Array).
-	objectSpace backend
-		symbolTableClass: objectSpace backend byteSymbolClass.
-	objectSpace backend
-		largeNegativeIntegerClass: (self classNamed: #LargeNegativeInteger).
-	objectSpace backend
-		largePositiveIntegerClass: (self classNamed: #LargePositiveInteger).
-	objectSpace backend
-		methodClass: (self classNamed: #CompiledMethod).
-	objectSpace backend
-		floatClass: (self classNamed: #Float).
-	objectSpace backend
-		contextClass: (self classNamed: #Context).
-	objectSpace backend
-		processClass: (self classNamed: #Process).
-	objectSpace backend
-		blockClass: (self classNamed: #BlockClosure).
-	objectSpace backend
-		messageClass: (self classNamed: #Message).
-
-	"Point is required in the special objects array because it is used to instantiate point objects faster.
-	If we do not put it here, the VM will crash.
-	Lots of tests in kernel use it."
-	objectSpace backend
-		pointClass: (self classNamed: #Point).
-	objectSpace backend
-		processorAssociation: (self classNamed: #Association) basicNew.
-	objectSpace backend processorAssociation
-		value: (self classNamed: #ProcessorScheduler) basicNew.
-	objectSpace backend
-		specialSelectors: ((self classNamed: #Array) basicNew: 64).
+	
+	self setFirstObjectsStubClasses.
+	self fillSpecialObjectsArrayWithStubs.
+	
 	self flag: 'owner custom code, replace by hook'.
 	self classNamed: #ProtoObject
 ]
@@ -376,6 +341,54 @@ PBImageBuilderGeneric >> errorMessagesArray [
 { #category : #accessing }
 PBImageBuilderGeneric >> espellBackend [
 	^ espellBackend 
+]
+
+{ #category : #'bootstrap1-stubs' }
+PBImageBuilderGeneric >> fillSpecialObjectsArrayWithStubs [
+	objectSpace backend
+		smallIntegerClass: (self classNamed: #SmallInteger).
+	objectSpace backend
+		characterClass: (self classNamed: #Character).
+	objectSpace backend
+		byteSymbolClass: (self classNamed: #Symbol).
+	objectSpace backend
+		byteStringClass: (self classNamed: #ByteString).
+	objectSpace backend
+		byteArrayClass: (self classNamed: #ByteArray).
+	objectSpace backend
+		associationClass: (self classNamed: #Association).
+	objectSpace backend
+		arrayClass: (self classNamed: #Array).
+	objectSpace backend
+		symbolTableClass: objectSpace backend byteSymbolClass.
+	objectSpace backend
+		largeNegativeIntegerClass: (self classNamed: #LargeNegativeInteger).
+	objectSpace backend
+		largePositiveIntegerClass: (self classNamed: #LargePositiveInteger).
+	objectSpace backend
+		methodClass: (self classNamed: #CompiledMethod).
+	objectSpace backend
+		floatClass: (self classNamed: #Float).
+	objectSpace backend
+		contextClass: (self classNamed: #Context).
+	objectSpace backend
+		processClass: (self classNamed: #Process).
+	objectSpace backend
+		blockClass: (self classNamed: #BlockClosure).
+	objectSpace backend
+		messageClass: (self classNamed: #Message).
+
+	"Point is required in the special objects array because it is used to instantiate point objects faster.
+	If we do not put it here, the VM will crash.
+	Lots of tests in kernel use it."
+	objectSpace backend
+		pointClass: (self classNamed: #Point).
+	objectSpace backend
+		processorAssociation: (self classNamed: #Association) basicNew.
+	objectSpace backend processorAssociation
+		value: (self classNamed: #ProcessorScheduler) basicNew.
+	objectSpace backend
+		specialSelectors: ((self classNamed: #Array) basicNew: 64).
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -491,10 +504,16 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 PBImageBuilderGeneric >> initializeGlobals [
 	| nilObj |
 	nilObj := objectSpace nilObject.
-	(self languageDefinition globalVariables) do: [ :globalVarName |
-		" Create one global for each global variable in the language definition "
-		self bootstrapEnvironment at: globalVarName put: nilObj.
-		self assert: (self bootstrapEnvironment at: globalVarName) = nilObj ]
+	" set globals required by bootstrap "
+	self languageDefinition globalVariables
+		do: [ :globalVarName | 
+			" Create one global for each global variable in the language definition "
+			bootstrapEnvironment at: globalVarName put: nilObj.
+			self assert: (self bootstrapEnvironment at: globalVarName) = nilObj ].
+	bootstrapEnvironment at: #Processor put: self objectSpace nilObject.
+	bootstrapEnvironment
+		at: #Undeclared
+		put: (EP2RemoteDictionary newWithBackend: espellBackend)
 ]
 
 { #category : #'special objects array' }
@@ -671,6 +690,17 @@ PBImageBuilderGeneric >> reportSizes [
 	"	nextPutAll: ' (avg obj bytes '; print: newAvgBytes maxDecimalPlaces: 2; nextPutAll: ' words '; print: newAvgBytes / self wordSize maxDecimalPlaces: 2; nextPut: $); cr;
 ""		nextPutAll: 'change: '; print: change * 100.0 maxDecimalPlaces: 2; nextPut: $%; cr;"
 		flush
+]
+
+{ #category : #'bootstrap1-stubs' }
+PBImageBuilderGeneric >> setFirstObjectsStubClasses [
+	objectSpace nilObject
+		setClass: (self classNamed: #UndefinedObject).
+	objectSpace falseObject
+		setClass: (self classNamed: #False).
+	objectSpace trueObject
+		setClass: (self classNamed: #True).
+	
 ]
 
 { #category : #accessing }

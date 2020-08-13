@@ -66,17 +66,17 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 	| newBehavior |
 	(self isFullyLoadedClassNamed: aClassDefinition name)
 		ifTrue: [ ^ self ].
-	
 	aClassDefinition isBehavior
 		ifTrue: [ "We ensure a class with that name already exists"
 			self bootstrapEnvironment
 				at: aClassDefinition name
-				ifAbsent: [ 
-					self createStubForClassNamed: aClassDefinition name] ].
+				ifAbsentPut: [ 
+					"self createStubForClassNamed: aClassDefinition name"
+					aClassDefinition installStub ] ].
 	
 	newBehavior := (self systemDefinition
 		hookInstallClass: aClassDefinition) asRemoteClass.
-	
+	"register class in remote globals"
 	self systemDefinition
 		hookRegisterClass: newBehavior
 		fromDefinition: aClassDefinition.
@@ -86,9 +86,7 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 				named: aClassDefinition name) evaluate. 
 	(self systemDefinition hookInitializeMethodDictionaryFor: newBehavior)
 		evaluate.
-	"we register the class by hand in the Smalltalk globals"
-	(self systemDefinition
-		instructionRegisterInstalledBehaviorInGlobals: newBehavior) evaluate.
+	
 	self systemDictionary at: aClassDefinition name put: newBehavior
 ]
 
