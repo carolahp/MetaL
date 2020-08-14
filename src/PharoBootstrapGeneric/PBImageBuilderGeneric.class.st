@@ -112,10 +112,17 @@ PBImageBuilderGeneric >> bootstrapEnvironment [
 ]
 
 { #category : #'accessing-environment' }
-PBImageBuilderGeneric >> bootstrapEnvironmentAt: aString [ 
+PBImageBuilderGeneric >> bootstrapEnvironmentAt: aString [
 	| classDefinition |
-	classDefinition := [self systemDefinition classByRoleOrName: aString] on: PBClassDefinitionNotFound  do: [ ^ nil ].
-	^ self bootstrapEnvironment at: classDefinition name ifAbsent: [ nil ]
+	classDefinition := [ self systemDefinition classByRoleOrName: aString ]
+		on: PBClassDefinitionNotFound
+		do: [
+			"global is not the name of a class" 
+			^ self bootstrapEnvironment at: aString ifAbsent: [ nil ] ].
+	"global is a class name"
+	^ self bootstrapEnvironment
+		at: classDefinition name
+		ifAbsent: [ nil ]
 ]
 
 { #category : #accessing }
