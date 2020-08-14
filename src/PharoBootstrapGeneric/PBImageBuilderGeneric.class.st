@@ -225,7 +225,7 @@ PBImageBuilderGeneric >> createInitialObjects [
 	" create the remote systemDictionary by evaluating a hook, or by creating an empty dictionary if the hook is not set "
 	remoteSystemDictionary := self systemDefinition
 		hookNewSystemDictionary evaluate
-		ifNil: [ remoteSystemDictionary := (EP2RemoteDictionary
+		ifNil: [ remoteSystemDictionary := (EP2RemoteSystemDictionary
 				newWithBackend: espellBackend) asRemoteDictionary ].
 	" set the objectSpace reference to the remote systemDictionary "
 	self objectSpace systemDictionary
@@ -357,7 +357,7 @@ PBImageBuilderGeneric >> fillSpecialObjectsArrayWithStubs [
 	objectSpace backend
 		characterClass: (self classNamed: #Character).
 	objectSpace backend
-		byteSymbolClass: (self classNamed: #Symbol).
+		byteSymbolClass: (self classNamed: #ByteSymbol).
 	objectSpace backend
 		byteStringClass: (self classNamed: #ByteString).
 	objectSpace backend
