@@ -178,7 +178,8 @@ PBClassLoaderGeneric >> fullyLoaded [
 PBClassLoaderGeneric >> initialize [
 	super initialize.
 	addressDefinitionMap := Dictionary new.
-	fullyLoaded := Dictionary new
+	fullyLoaded := Dictionary new.
+	nextClassIndex := nil
 ]
 
 { #category : #'initializing-classes' }
