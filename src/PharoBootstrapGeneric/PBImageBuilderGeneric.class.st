@@ -318,14 +318,23 @@ PBImageBuilderGeneric >> debuggerInterpreter [
 
 { #category : #initializing }
 PBImageBuilderGeneric >> destroyBootstrapEnvironment [
-	
 	espellBackend := nil.
 	bootstrapEnvironment := nil.
-	objectSpace := nil.
-	classLoader := nil.
 	bootstrapInterpreter := nil.
 	debuggerInterpreter := nil.
+	objectSpace
+		ifNotNil: [ 
+			objectSpace interpreter: nil.
+			objectSpace debuggerInterpreter: nil.
+			objectSpace := nil ].
 	
+	classLoader
+		ifNotNil: [ 
+			classLoader builder: nil.
+			classLoader := nil ].
+	
+	imageFileReference := nil.
+	freeListsOop := nil
 ]
 
 { #category : #'accessing error messages' }
@@ -352,6 +361,7 @@ PBImageBuilderGeneric >> espellBackend [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> fillSpecialObjectsArrayWithStubs [
+
 	objectSpace backend
 		smallIntegerClass: (self classNamed: #SmallInteger).
 	objectSpace backend
@@ -473,7 +483,7 @@ PBImageBuilderGeneric >> freeForwarders [
 
 { #category : #initializing }
 PBImageBuilderGeneric >> initializeBootstrapEnvironment [
-	
+	self destroyBootstrapEnvironment.
 	espellBackend := EP2Backend for32Bit forBootstrap.
 	espellBackend systemDefinition: self systemDefinition.
 	

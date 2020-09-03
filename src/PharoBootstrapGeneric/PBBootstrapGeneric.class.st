@@ -94,7 +94,7 @@ PBBootstrapGeneric >> installProcess [
 	
 	builder objectSpace backend processorAssociation: association.
 	
-	process := builder objectSpace createProcessWithPriority: 3 doing: builder systemDefinition hookMainProcess code withTemps: #().
+	process := builder objectSpace createProcessWithPriority: 3 doing: builder systemDefinition hookEntryPoint code withTemps: #().
  	builder objectSpace installAsActiveProcess: process withProcessor: (builder bootstrapEnvironment at: #Processor).
 	
 	(builder systemDefinition hookSetSpecialObjectsArray: builder objectSpace backend specialObjectsArray) evaluate.
@@ -134,6 +134,11 @@ PBBootstrapGeneric >> prepareBootstrap [
 		prepareEnvironmentForHermes;
 		generateHermesFiles;
 		prepareEnvironmentForExport."
+]
+
+{ #category : #accessing }
+PBBootstrapGeneric >> spurImage [
+	^ self builder spurImage
 ]
 
 { #category : #'writing-image' }

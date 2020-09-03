@@ -50,8 +50,9 @@ PBClassLoaderGeneric >> builder: aPBImageBuilderGeneric [
 { #category : #'accessing-mapping-mirrors/definitions' }
 PBClassLoaderGeneric >> classForClassMirror: anEPClassMirror [ 
 	self assert: anEPClassMirror isRemoteClass.
-	^ self addressDefinitionMap at: anEPClassMirror target address 
-		ifAbsent: [ self systemDefinitionAt: #Class ]
+	^ anEPClassMirror asRGClass
+	"^ self addressDefinitionMap at: anEPClassMirror target address 
+		ifAbsent: [ self systemDefinitionAt: #Class ]"
 ]
 
 { #category : #'accessing-classes-installed' }
@@ -76,6 +77,7 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 	
 	newBehavior := (self systemDefinition
 		hookInstallClass: aClassDefinition) asRemoteClass.
+	
 	"register class in remote globals"
 	self systemDefinition
 		hookRegisterClass: newBehavior
@@ -96,10 +98,12 @@ PBClassLoaderGeneric >> createClassStubForDefinition: aRGBehavior [
 	| class metaclass |	
 	metaclass := self metaclassClass basicNew asRemoteMetaclass.
 	metaclass format: aRGBehavior classSide format.
+	metaclass setHashBitsTo: self newClassIndex.
 	self registerClass: metaclass definition: aRGBehavior metaclass fullyLoaded: false.
 	
 	class := metaclass basicNew asRemoteClass.
 	class format: aRGBehavior format.
+	class setHashBitsTo: self newClassIndex.
 	self registerClass: class definition: aRGBehavior fullyLoaded: false.
 	self assert: class basicClass = metaclass .
 	
@@ -135,7 +139,8 @@ PBClassLoaderGeneric >> createStubForClassNamed: aString metaclassIndex: anInteg
 	
 	" Finally we set its identity hash. A class identityHash is its index "
 	stub setHashBitsTo: newClassIndex.
-	self registerClassInClassTable: stub atIndex: newClassIndex.
+	self registerClass: stub definition: classDef fullyLoaded: false.
+	self assert: stub classTableIndex = newClassIndex.
 	
 	^ stub
 ]
@@ -212,6 +217,21 @@ PBClassLoaderGeneric >> initializeClassPools [
 		 ]
 ]
 
+{ #category : #registering }
+PBClassLoaderGeneric >> installClass: aClassMirror inClassTableIndex: anInteger inBootstrapEnvironment: className [ 
+	self backend installClass: aClassMirror inClassTableIndex: anInteger.
+	"If it existed before, we migrate its state"
+	(aClassMirror isStub not
+		and: [ self bootstrapEnvironment includesKey: className ])
+		ifTrue: [ self
+				migrateOldClass: (self bootstrapEnvironment at: className)
+				to: aClassMirror ].
+	"Register in the bootstrap environment if it doesn't have me"
+	(self bootstrapEnvironment includesKey: className)
+		ifFalse: [ self bootstrapEnvironment at: className put: aClassMirror ].
+
+]
+
 { #category : #accessing }
 PBClassLoaderGeneric >> instanceVariableMapping [
 	^ builder languageDefinition instanceVariableMapping
@@ -226,6 +246,11 @@ PBClassLoaderGeneric >> isClassDefinition: aString [
 PBClassLoaderGeneric >> isFullyLoadedClassNamed: aClassName [
 
 	^ fullyLoaded at: aClassName ifAbsent: [ false ]
+]
+
+{ #category : #'stubs-class-creation' }
+PBClassLoaderGeneric >> lastClassIndex [
+	^ nextClassIndex
 ]
 
 { #category : #'class-creation' }
@@ -249,14 +274,7 @@ PBClassLoaderGeneric >> localArrayAsRemoteDictionary: aCollection [
 
 { #category : #'accessing-mapping-mirrors/definitions' }
 PBClassLoaderGeneric >> map: aClassMirror with: aDefinition [
-
 	"We create a mapping between the real classes and their definitions for later"
-	
-	self assert: (aClassMirror target isKindOf: EP2Handle).
-	(aClassMirror backend simulator objectMemory classTableRootObj) ifNotNil: [
-		self assert: aClassMirror target asClassIndexHandle address notNil.
-		aClassMirror target: (aClassMirror target asClassIndexHandle) ].
-
 	addressDefinitionMap at: aClassMirror target address put: aDefinition.
 	aDefinition propertyNamed: #address put: aClassMirror target address
 ]
@@ -280,7 +298,9 @@ PBClassLoaderGeneric >> migrateOldClass: oldClass to: newClass [
 	| oldClassAddress |
 	
 	oldClassAddress := oldClass target address.
-	
+	oldClassAddress == newClass target address
+		ifTrue: [ 
+			^ newClass ].
 	"We migrate the class pools"
 	oldClass classPool isNilObject ifFalse: [
 		newClass classPool: oldClass asRemoteClass classPool ].
@@ -320,41 +340,54 @@ PBClassLoaderGeneric >> registerClass: aClassMirror named: aString [
 { #category : #'class-registration' }
 PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded: aBoolean [
 	| definition |
-	
-	
 	definition := self systemDefinition classNamed: className.
+	self assert: aClassMirror format isNilObject not.
+	self installClass: aClassMirror inClassTableIndex: aClassMirror classTableIndex inBootstrapEnvironment: className.
 	
-	"If it existed before, we migrate its state"
-	(aClassMirror isStub not
-		and: (self bootstrapEnvironment includesKey: className))
-		ifTrue: [ self
-				migrateOldClass: (self bootstrapEnvironment at: className)
-				to: aClassMirror ].
-	self bootstrapEnvironment at: className put: aClassMirror.
-
 	"We register it and keep up to date our compact class index"
 	aClassMirror compactClassIndex = 0
-		ifFalse: [ builder objectSpace backend
+		ifFalse: [ self
+				error: 'in spur all classes are compact. We should not have arrived here'
+			".builder objectSpace backend
 				compactClassAt: aClassMirror asClassMirror compactClassIndex
-				put: aClassMirror ].
+				put: aClassMirror" ].
 
 	"We create a mapping between the real classes and their definitions for later"
 	self map: aClassMirror with: definition.
-	"self map: aClassMirror basicClass with: definition metaclass."
 
 	"We say the simulator that this class is a root, possible becomes can come into it. THIS IS ONLY VALID FOR SPUR SIMULATOR BOOTSTRAP. REFACTOR ME"
 	self flag: #refactorMe.
 	builder objectSpace backend addExtraRoot: aClassMirror.
 
 	"We reset the class map of the ast interpreter"
-	self fullyLoaded at: className put: aBoolean.
+	self fullyLoaded at: className put: aBoolean
+]
+
+{ #category : #'class-registration' }
+PBClassLoaderGeneric >> registerClassInClassTable: aClassMirror [
+
+	"Use this only after setting the class index of aClassMirror using 
+	'aClassMirror setHashBitsTo: aClassTableIndex' "
+	|oldAddress newAddress| 
+	self deprecated: 'use installClass:inClassTableIndex:'.	
+	"we perform validations before registering the class"
+	self assert: aClassMirror isNilObject not.
+	self assert: aClassMirror backend simulator objectMemory classTableRootObj isNotNil.
+	self assert: (aClassMirror target isKindOf: EP2Handle).
+	self assert: aClassMirror classTableIndex isNotNil.
+	oldAddress:= aClassMirror target address.
+	self assert: aClassMirror target asClassIndexHandle address notNil.
+	"we register the class in the class table"
+	self builder objectSpace backend objectMemory classAtIndex: aClassMirror classTableIndex put: aClassMirror target address.	
+	aClassMirror target: (aClassMirror target asClassIndexHandle).
+	newAddress := aClassMirror target address.
+	self assert: newAddress = oldAddress.
 	
 ]
 
 { #category : #'class-registration' }
 PBClassLoaderGeneric >> registerClassInClassTable: aClassMirror atIndex: anInteger [ 
-	self builder objectSpace backend objectMemory classAtIndex: anInteger put: aClassMirror target address.	
-	
+	self deprecated: 'use registerClassInClassTable:'
 ]
 
 { #category : #'stubs-class-creation' }
