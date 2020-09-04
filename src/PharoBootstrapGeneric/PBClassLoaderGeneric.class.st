@@ -97,7 +97,7 @@ PBClassLoaderGeneric >> createClassStubForDefinition: aRGBehavior [
 	
 	| class metaclass |	
 	metaclass := self metaclassClass basicNew asRemoteMetaclass.
-	metaclass format: aRGBehavior classSide format.
+	metaclass format: aRGBehavior metaclass format.
 	metaclass setHashBitsTo: self newClassIndex.
 	self registerClass: metaclass definition: aRGBehavior metaclass fullyLoaded: false.
 	
