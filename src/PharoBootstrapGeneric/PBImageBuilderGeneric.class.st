@@ -166,7 +166,8 @@ PBImageBuilderGeneric >> createBehaviorFromDefinition: aRGBehavior [
 
 { #category : #'bootstrap2-classes' }
 PBImageBuilderGeneric >> createClasses [
-	| definitions total |
+	self systemDefinition hookInstallClasses.
+	"| definitions total |
 	definitions := self systemDefinition allClassesAndTraits sorted: [ :a :b | a name < b name ].
 	total := definitions size.
 	definitions
@@ -178,7 +179,7 @@ PBImageBuilderGeneric >> createClasses [
 									time asString ,': Built behavior ', 
 										aClassDefinition name). ].
 	
-	PBStepFinishedSignal emit: 'Classes created'
+	PBStepFinishedSignal emit: 'Classes created'"
 ]
 
 { #category : #'bootstrap1-stubs' }

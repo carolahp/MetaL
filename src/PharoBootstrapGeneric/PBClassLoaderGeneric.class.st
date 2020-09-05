@@ -96,6 +96,7 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 PBClassLoaderGeneric >> createClassStubForDefinition: aRGBehavior [
 	
 	| class metaclass |	
+	self deprecated: 'Use EP2Class >> hookInstallStub instead'.
 	metaclass := self metaclassClass basicNew asRemoteMetaclass.
 	metaclass format: aRGBehavior metaclass format.
 	metaclass setHashBitsTo: self newClassIndex.
@@ -112,14 +113,15 @@ PBClassLoaderGeneric >> createClassStubForDefinition: aRGBehavior [
 
 { #category : #'stubs-class-creation' }
 PBClassLoaderGeneric >> createStubForClass: aRGBehavior [
+	self deprecated: 'Use EP2Class >> hookInstallStub instead'.
 	^ aRGBehavior isBehavior
 		ifTrue: [ self createClassStubForDefinition: aRGBehavior ]
 		ifFalse: [ self error: 'Error while creating the class stub!' ]
 ]
 
-{ #category : #'stubs-class-creation' }
+{ #category : #'class-creation-stubs' }
 PBClassLoaderGeneric >> createStubForClassNamed: aString [ 
-
+	self deprecated: 'use EP2Class >> installStub instead'.
 	^ self createStubForClass: (self systemDefinitionAt: aString)
 ]
 
@@ -255,11 +257,10 @@ PBClassLoaderGeneric >> lastClassIndex [
 
 { #category : #'class-creation' }
 PBClassLoaderGeneric >> loadClassNamed: aString [
-	| class |
-	class := self createStubForClassNamed: aString.
-	"shouldInitializeClassPool
-		ifTrue: [ self initializeClassPool: aString ]."
-	^ class
+	| classDef |
+	classDef := self systemDefinitionAt: aString.
+	classDef installStub.
+	^ classDef remote
 ]
 
 { #category : #'instance-creation' }
