@@ -166,20 +166,7 @@ PBImageBuilderGeneric >> createBehaviorFromDefinition: aRGBehavior [
 
 { #category : #'bootstrap2-classes' }
 PBImageBuilderGeneric >> createClasses [
-	self systemDefinition hookInstallClasses.
-	"| definitions total |
-	definitions := self systemDefinition allClassesAndTraits sorted: [ :a :b | a name < b name ].
-	total := definitions size.
-	definitions
-		withIndexDo: [ :aClassDefinition :index | | time |
-			time := [self createBehaviorFromDefinition: aClassDefinition.] timeToRun.
-			
-			PBSubStepFinishedSignal emit: ((index printPaddedWith: $0 to: 3), '/' , 
-								total asString, ' - ', 
-									time asString ,': Built behavior ', 
-										aClassDefinition name). ].
-	
-	PBStepFinishedSignal emit: 'Classes created'"
+	self systemDefinition hookInstallClasses
 ]
 
 { #category : #'bootstrap1-stubs' }
