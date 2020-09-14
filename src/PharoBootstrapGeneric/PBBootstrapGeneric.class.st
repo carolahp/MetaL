@@ -88,14 +88,15 @@ PBBootstrapGeneric >> installProcess [
 	builder systemDefinition hookInitializeProcessScheduler.
 	
 	association := (builder classNamed: #Association) new asRemoteAssociation
-		key: builder objectSpace nilObject;
+		key: (#Processor asRemoteObjectInObjectSpace: builder objectSpace);
 		value: (builder bootstrapEnvironmentAt: #Processor);
 		yourself.
-	
 	builder objectSpace backend processorAssociation: association.
 	
 	process := builder objectSpace createProcessWithPriority: 3 doing: builder systemDefinition hookEntryPoint code withTemps: #().
  	builder objectSpace installAsActiveProcess: process withProcessor: (builder bootstrapEnvironment at: #Processor).
+	
+	builder objectSpace systemDictionary at: #'Processor' put: association value.
 	
 	(builder systemDefinition hookSetSpecialObjectsArray: builder objectSpace backend specialObjectsArray).
 	

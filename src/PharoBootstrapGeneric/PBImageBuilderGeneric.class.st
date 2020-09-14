@@ -215,14 +215,15 @@ PBImageBuilderGeneric >> createInitialObjects [
 	smalltalkImageDef := self systemDefinition
 		classWithRole: #SmalltalkImage.
 	smalltalkImageDef
-		ifNotNil: [ smalltalk := smalltalkImageDef remote new.
+		ifNotNil: [ 
+			smalltalk := smalltalkImageDef remote new.
 			smalltalk instanceVariableAtIndex: 1 put: remoteSystemDictionary.
 			remoteSystemDictionary
 				at: (self systemDefinition globalWithRole: #Smalltalk) name
 				put: smalltalk.
 			espellBackend smalltalkInstance: smalltalk ].
 	self systemDefinition hookInitializeClassStubs.
-	
+
 	" set the objectSpace reference to the remote systemDictionary "
 	self objectSpace systemDictionary
 		withSystemDictionary: remoteSystemDictionary.
