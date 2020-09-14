@@ -208,13 +208,12 @@ PBImageBuilderGeneric >> createInitialObjects [
 	" Initialize globals in the bootstrap environment "
 
 	self initializeGlobals.
-	self systemDefinition hookInitalizeGlobals evaluate.
+	remoteSystemDictionary := self systemDefinition hookInitalizeGlobals.
 	self systemDefinition hookInitializeClassStubs.
 	" create the remote systemDictionary by evaluating a hook, or by creating an empty dictionary if the hook is not set "
-	remoteSystemDictionary := self systemDefinition
-		hookNewSystemDictionary evaluate
-		ifNil: [ remoteSystemDictionary := (EP2RemoteSystemDictionary
-				newWithBackend: espellBackend) asRemoteDictionary ].
+	remoteSystemDictionary ifNil: [ 
+		 remoteSystemDictionary := (EP2RemoteSystemDictionary
+			newWithBackend: espellBackend) asRemoteDictionary ].
 	" set the objectSpace reference to the remote systemDictionary "
 	self objectSpace systemDictionary
 		withSystemDictionary: remoteSystemDictionary.
@@ -511,10 +510,10 @@ PBImageBuilderGeneric >> initializeGlobals [
 	nilObj := objectSpace nilObject.
 	" set globals required by bootstrap "
 	self languageDefinition globalVariables
-		do: [ :globalVarName | 
+		do: [ :globalVar | 
 			" Create one global for each global variable in the language definition "
-			bootstrapEnvironment at: globalVarName put: nilObj.
-			self assert: (self bootstrapEnvironment at: globalVarName) = nilObj ].
+			bootstrapEnvironment at: globalVar name asSymbol put: nilObj.
+			self assert: (self bootstrapEnvironment at: globalVar name asSymbol) = nilObj ].
 	bootstrapEnvironment at: #Processor put: self objectSpace nilObject.
 	bootstrapEnvironment
 		at: #Undeclared
