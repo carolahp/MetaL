@@ -97,7 +97,7 @@ PBBootstrapGeneric >> installProcess [
 	process := builder objectSpace createProcessWithPriority: 3 doing: builder systemDefinition hookEntryPoint code withTemps: #().
  	builder objectSpace installAsActiveProcess: process withProcessor: (builder bootstrapEnvironment at: #Processor).
 	
-	(builder systemDefinition hookSetSpecialObjectsArray: builder objectSpace backend specialObjectsArray) evaluate.
+	(builder systemDefinition hookSetSpecialObjectsArray: builder objectSpace backend specialObjectsArray).
 	
 	builder followForwardingPointers.
 

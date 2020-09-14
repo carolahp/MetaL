@@ -204,37 +204,48 @@ PBImageBuilderGeneric >> createFirstObjectsStubs [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createInitialObjects [
-	| remoteSystemDictionary |
+	| remoteSystemDictionary smalltalkImageDef smalltalk |
 	" Initialize globals in the bootstrap environment "
-
 	self initializeGlobals.
-	remoteSystemDictionary := self systemDefinition hookInitalizeGlobals.
-	self systemDefinition hookInitializeClassStubs.
 	" create the remote systemDictionary by evaluating a hook, or by creating an empty dictionary if the hook is not set "
-	remoteSystemDictionary ifNil: [ 
-		 remoteSystemDictionary := (EP2RemoteSystemDictionary
-			newWithBackend: espellBackend) asRemoteDictionary ].
+	
+	remoteSystemDictionary := self systemDefinition hookInitalizeGlobals
+		ifNil: [ remoteSystemDictionary := (EP2RemoteSystemDictionary
+				newWithBackend: espellBackend) asRemoteDictionary ].
+	smalltalkImageDef := self systemDefinition
+		classWithRole: #SmalltalkImage.
+	smalltalkImageDef
+		ifNotNil: [ smalltalk := smalltalkImageDef remote new.
+			smalltalk instanceVariableAtIndex: 1 put: remoteSystemDictionary.
+			remoteSystemDictionary
+				at: (self systemDefinition globalWithRole: #Smalltalk) name
+				put: smalltalk.
+			espellBackend smalltalkInstance: smalltalk ].
+	self systemDefinition hookInitializeClassStubs.
+	
 	" set the objectSpace reference to the remote systemDictionary "
 	self objectSpace systemDictionary
 		withSystemDictionary: remoteSystemDictionary.
-	
+
 	"Adding essential globals to system dictionary"
 	"bootstrapEnvironment
 		associationsDo: [ :assoc | 			
 			objectSpace systemDictionary
 				at: assoc key
 				ifAbsentPut: assoc value ]."
-	
+
 	"update the bootstrapEnvironment associations according to the contents of the new systemDictionary "
 	objectSpace systemDictionary
 		associationsDo: [ :assoc | 
 			bootstrapEnvironment
 				at: assoc key asRemoteByteString asLocalByteString asSymbol
 				put: assoc value ].
-	objectSpace systemDictionary at: #Processor ifAbsentPut: (bootstrapEnvironment at: #Processor).
-	objectSpace systemDictionary at: #Undeclared ifAbsentPut: (bootstrapEnvironment at: #Undeclared).
-	
-	
+	objectSpace systemDictionary
+		at: #Processor
+		ifAbsentPut: (bootstrapEnvironment at: #Processor).
+	objectSpace systemDictionary
+		at: #Undeclared
+		ifAbsentPut: (bootstrapEnvironment at: #Undeclared).
 	self systemDefinition hookCreateInitialObjects evaluate
 ]
 
