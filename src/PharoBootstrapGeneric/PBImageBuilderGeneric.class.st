@@ -534,7 +534,8 @@ PBImageBuilderGeneric >> initializeGlobals [
 
 { #category : #'special objects array' }
 PBImageBuilderGeneric >> initializeSpecialObjectArray [
-	objectSpace specialObjectsArray: self newSpecialObjectsArray
+	objectSpace specialObjectsArray: self newSpecialObjectsArray.
+	self systemDefinition hookInitializeSpecialObjectsArray
 ]
 
 { #category : #'method installing' }
