@@ -82,12 +82,14 @@ PBBootstrapGeneric >> installOnlyMarkedMethods: aBoolean [
 
 { #category : #'bootstrap4-install process' }
 PBBootstrapGeneric >> installProcess [
-	| association process |
+	| association process processor |
 	builder initializeSpecialObjectArray.
 	
-	builder systemDefinition hookInitializeProcessScheduler.
+	processor := builder systemDefinition hookInitializeProcessScheduler.
+	builder bootstrapEnvironment at: #Processor put: processor. 
+	builder objectSpace systemDictionary at: #Processor put: processor.
 	
-	association := (builder classNamed: #Association) new asRemoteAssociation
+	association := (builder classNamed: #Association) basicNew asRemoteAssociation
 		key: (#Processor asRemoteObjectInObjectSpace: builder objectSpace);
 		value: (builder bootstrapEnvironmentAt: #Processor);
 		yourself.

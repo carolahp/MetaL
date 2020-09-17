@@ -204,7 +204,7 @@ PBImageBuilderGeneric >> createFirstObjectsStubs [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createInitialObjects [
-	| remoteSystemDictionary smalltalkImageDef smalltalk |
+	| remoteSystemDictionary smalltalkImageDef smalltalk smalltalkinstance |
 	" Initialize globals in the bootstrap environment "
 	self initializeGlobals.
 	" create the remote systemDictionary by evaluating a hook, or by creating an empty dictionary if the hook is not set "
@@ -212,22 +212,15 @@ PBImageBuilderGeneric >> createInitialObjects [
 	remoteSystemDictionary := self systemDefinition hookInitalizeGlobals
 		ifNil: [ remoteSystemDictionary := (EP2RemoteSystemDictionary
 				newWithBackend: espellBackend) asRemoteDictionary ].
-	smalltalkImageDef := self systemDefinition
-		classWithRole: #SmalltalkImage.
-	smalltalkImageDef
-		ifNotNil: [ 
-			smalltalk := smalltalkImageDef remote new.
-			smalltalk instanceVariableAtIndex: 1 put: remoteSystemDictionary.
-			remoteSystemDictionary
-				at: (self systemDefinition globalWithRole: #Smalltalk) name
-				put: smalltalk.
-			espellBackend smalltalkInstance: smalltalk ].
-	self systemDefinition hookInitializeClassStubs.
-
 	" set the objectSpace reference to the remote systemDictionary "
 	self objectSpace systemDictionary
 		withSystemDictionary: remoteSystemDictionary.
 
+	smalltalkinstance := self systemDefinition hookCreateSmalltalkInstance.
+	smalltalkinstance ifNotNil: [ espellBackend smalltalkInstance: smalltalkinstance ].
+	self systemDefinition hookInitializeClassStubs.
+
+	
 	"Adding essential globals to system dictionary"
 	"bootstrapEnvironment
 		associationsDo: [ :assoc | 			
