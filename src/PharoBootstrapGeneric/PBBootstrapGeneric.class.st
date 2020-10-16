@@ -95,7 +95,7 @@ PBBootstrapGeneric >> installProcess [
 		yourself.
 	builder objectSpace backend processorAssociation: association.
 	
-	process := builder objectSpace createProcessWithPriority: 3 doing: builder systemDefinition hookEntryPoint code withTemps: #().
+	process := builder objectSpace createProcessWithPriority: 3 doing: (builder systemDefinition classMetaclass name, ' entryPoint') asString withTemps: #().
  	builder objectSpace installAsActiveProcess: process withProcessor: (builder bootstrapEnvironment at: #Processor).
 	
 	(builder systemDefinition hookSetSpecialObjectsArray: builder objectSpace backend specialObjectsArray).
