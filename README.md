@@ -48,3 +48,6 @@ When the Pharo VM fails to execute the generated kernel, it is possible to debug
 (useful for debugging VM code using the Pharo debugger"
 myLanguage runImageLoadedFromFile.
 ```	
+
+# Examples
+Example Languages are offered in the repository [LanguageMetamodels](https://github.com/carolahp/LanguageMetamodels).
