@@ -1,5 +1,5 @@
 # PharoBootstrapGeneric
-A generic bootstrapper for Pharo like languages. 
+A generic bootstrapper for languages different from Pharo. 
 
 This is an alternative to the bootstrapper provided in the official Pharo repository, but it uses mostly the same backend originally provided by [@Guillep](https://github.com/guillep/).
 
