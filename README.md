@@ -1,5 +1,5 @@
 # PharoBootstrapGeneric
-This project contains a bootstrapper that generates images of small languages, which can be different from Pharo, but run on top of the Pharo Virtual Machine.
+This project contains a bootstrapper that generates images of small languages, which can be different from Pharo, but run on top of the Pharo Virtual Machine (only 32 bits for the moment).
 The bootstrapper is a Pharo application that takes the definition of a new language and generates a file with extension .image, ready to be executed by the Pharo VM.
 
 Generated images are small, thus we call them kernels.
@@ -32,16 +32,19 @@ LanguageModel subclass: #MyLanguage
 ## Creating the language model and generating the kernel
 ```Smalltalk
 | myLanguage |
-"instantiates the language model"
+"instantiate the language model"
 myLanguage := (MyLanguage 
 	named: 'MyLanguage' 
 	withEntryPoint: 'System log: ''hello world''. 
         System quit.').
 
-"generates the kernel and executes it using an external VM"
+"generate the kernel and execute it using the external Pharo VM"
 myLanguage generateAndRun.
-	
-"loads the generated kernel file into the host (current image) and executes it using the VM simulator 
+```
+## Debugging the generated kernel
+When the Pharo VM fails to execute the generated kernel, it is possible to debug the VM code using the Pharo debugger by loadinig the generated kernel into Pharo and executing the kernel using the Pharo VM simulator.
+```Smalltalk
+"load the generated kernel file into the host (current image) and executes it using the VM simulator 
 (useful for debugging VM code using the Pharo debugger"
 myLanguage runImageLoadedFromFile.
 ```	
