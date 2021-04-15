@@ -15,8 +15,8 @@ BaselineOfPharoBootstrapGeneric >> baseline: spec [
 		spec baseline: 'Hermes' with: [ spec
 			repository: 'github://tesonep/hermes:v2.5.1';
   			loads: 'core' ].
-		spec baseline: 'Espell' with: [ spec 
-			repository: 'github://carolahp/espell:generic' ].
+		spec baseline: 'Espell2' with: [ spec 
+			repository: 'github://carolahp/espell2:generic-bootstrap' ].
 		spec
 			 package: 'PharoBootstrapGeneric'		
 ]
