@@ -1,5 +1,5 @@
 # PharoBootstrapGeneric
-This project contains a bootstrapper that generates images of small languages, which can be different from Pharo, but run on top of the Pharo Virtual Machine (only 32 bits for the moment).
+This is a bootstrapper that generates images of small languages, which can be different from Pharo, but run on top of the Pharo Virtual Machine (only 32 bits for the moment).
 The bootstrapper is a Pharo application that takes the definition of a new language and generates a file with extension .image, ready to be executed by the Pharo VM.
 
 Generated images are small, thus we call them kernels.
