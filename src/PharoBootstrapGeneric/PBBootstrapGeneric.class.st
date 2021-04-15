@@ -7,8 +7,26 @@ Class {
 		'builder',
 		'installOnlyMarkedMethods'
 	],
+	#classInstVars : [
+		'BaseLanguageModelRepository'
+	],
 	#category : #'PharoBootstrapGeneric-core'
 }
+
+{ #category : #'instance creation' }
+PBBootstrapGeneric class >> baseLanguageModelLocation [
+	^ self baseLanguageModelRepository location
+]
+
+{ #category : #'instance creation' }
+PBBootstrapGeneric class >> baseLanguageModelRepository [
+	^ BaseLanguageModelRepository
+]
+
+{ #category : #'instance creation' }
+PBBootstrapGeneric class >> baseLanguageModelRepository: anIceRepository [
+	^ BaseLanguageModelRepository := anIceRepository
+]
 
 { #category : #'instance creation' }
 PBBootstrapGeneric class >> for32Bits [

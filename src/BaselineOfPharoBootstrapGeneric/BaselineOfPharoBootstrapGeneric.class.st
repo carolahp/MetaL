@@ -9,7 +9,7 @@ BaselineOfPharoBootstrapGeneric >> baseline: spec [
 	<baseline>
 	
 	spec for: #common do: [
-		spec blessing: #baseline.
+		spec postLoadDoIt: #postload:package:.
 		spec baseline: 'Tonel' with: [ spec
 			repository: 'github://pharo-vcs/tonel:v1.0.13' ].
 		spec baseline: 'Hermes' with: [ spec
@@ -20,4 +20,15 @@ BaselineOfPharoBootstrapGeneric >> baseline: spec [
 		spec
 			 package: 'PharoBootstrapGeneric'		
 ]
+]
+
+{ #category : #baselines }
+BaselineOfPharoBootstrapGeneric >> postload: loader package: packageSpec [
+	PBBootstrapGeneric
+		baseLanguageModelRepository:
+			(IceRepository registry
+				detect: [ :repo | repo name = 'KernelExplicitMetaclasses' ]
+				ifNone: [ (IceRepositoryCreator new
+						addRemote: 'https://github.com/carolahp/KernelExplicitMetaclasses.git';
+						createRepository) register ]) 
 ]
