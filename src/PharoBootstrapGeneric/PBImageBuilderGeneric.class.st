@@ -548,7 +548,7 @@ PBImageBuilderGeneric >> installMethods [
 	
 	self systemDefinition hookInstallMethods.
 	
-	PBStepFinishedSignal emit: 'installed_methods'.
+	
 ]
 
 { #category : #'bootstrap3-methods' }
