@@ -12,7 +12,7 @@ This is an alternative to the bootstrapper provided in the official Pharo reposi
 
 # Installation
 The next code will install the bootstrapper and its dependencies (including [Espell](https://github.com/carolahp/espell/) and therefore the [Virtual Machine Simulator libraries](https://github.com/OpenSmalltalk/opensmalltalk-vm)).
-The VM Simulator is huge, so it will take some time to load.
+The VM Simulator is huge, so it will take a long time to load (around 20 minutes).
 
 ```Smalltalk
 [ Metacello new
