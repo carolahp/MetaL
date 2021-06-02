@@ -60,4 +60,10 @@ myLanguage imageInDisk executeInVMSimulator.
 ```	
 
 # Examples
-Example Languages are offered in the repository [LanguageMetamodels](https://github.com/carolahp/LanguageMetamodels).
+Example Languages [LanguageMetamodels](https://github.com/carolahp/LanguageMetamodels) are included, the simplest one is ObjVLisp.
+```Smalltalk
+objvlisp := (ObjVLispLanguage 
+	named: 'ObjVLisp' 
+	withEntryPoint: 'System log: ''Hello from ObjVLisp''. 
+        System quit.').
+```
