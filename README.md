@@ -38,15 +38,25 @@ myLanguage := (MyLanguage
 	withEntryPoint: 'System log: ''hello world''. 
         System quit.').
 
-"generate the kernel and execute it using the external Pharo VM"
-myLanguage generateAndRun.
+"generate the kernel in memory"
+myLanguage generate.
+
+"before writing the kernel to disk, you can execute code directly in your kernel, and even debug it!"
+language evaluateCode: '#(1 2 3) size'.
+language debugCode: '#(1 2 3) size'.
+
+"write the kernel to disk"
+myLanguage writeImage.
+
+"execute it using the external Pharo VM"
+myLanguage imageInDisk executeInVM.
+
 ```
 ## Debugging the generated kernel
 When the Pharo VM fails to execute the generated kernel, it is possible to debug the VM code using the Pharo debugger by loadinig the generated kernel into Pharo and executing the kernel using the Pharo VM simulator.
 ```Smalltalk
-"load the generated kernel file into the host (current image) and executes it using the VM simulator 
-(useful for debugging VM code using the Pharo debugger"
-myLanguage runImageLoadedFromFile.
+"execute the image from the host, using the VM Simulator"
+myLanguage imageInDisk executeInVMSimulator.
 ```	
 
 # Examples
