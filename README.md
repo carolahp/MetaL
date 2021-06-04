@@ -22,7 +22,8 @@ The VM Simulator is huge, so it will take a long time to load (around 20 minutes
 ```
 # Usage
 ## Extending the language meta-model
-Extend the class LanguageModel to define the class representing your language, as follows
+Extend the class LanguageModel to define the class representing your language, as follows.
+Implement corresponding hooks.
 ```Smalltalk
 LanguageModel subclass: #MyLanguage
 	instanceVariableNames: ''
@@ -37,6 +38,11 @@ myLanguage := (MyLanguage
 	named: 'MyLanguage' 
 	withEntryPoint: 'System log: ''hello world''. 
         System quit.').
+
+"load the base language definition, or load one created by yourself (tonel format)"
+language loadBaseLanguageModelDefinitions.
+"OR"
+language loadLanguageModelDefinitions: '/path/to/repo' asFileReference.
 
 "generate the kernel in memory"
 myLanguage generate.
