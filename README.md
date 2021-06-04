@@ -8,7 +8,7 @@ Generated images are small, thus we call them kernels.
 This is an alternative to the bootstrapper provided in the official Pharo repository, but it uses part of [@Guillep](https://github.com/guillep/) backend.
 
 # Requirements
-<strong>Install only in a Pharo 8.0 image</strong>
+<strong>Install only in Pharo 8.0</strong>
 
 # Installation
 The next code will install the bootstrapper and its dependencies (including [Espell](https://github.com/carolahp/espell/) and therefore the [Virtual Machine Simulator libraries](https://github.com/OpenSmalltalk/opensmalltalk-vm)).
