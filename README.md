@@ -44,6 +44,9 @@ language loadBaseLanguageModelDefinitions.
 "OR"
 language loadLanguageModelDefinitions: '/path/to/repo' asFileReference.
 
+"browse the language model using calypso"
+language browse.
+
 "generate the kernel in memory"
 myLanguage generate.
 
