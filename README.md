@@ -31,10 +31,12 @@ LanguageModel subclass: #MyLanguage
 	package: 'MyPackage'
 ```
 ## Creating the language model and generating the kernel
+Execute the next code in the Playground to generate your own kernel.
+
 ```Smalltalk
-| myLanguage |
+
 "instantiate the language model"
-myLanguage := (MyLanguage 
+language := (MyLanguage 
 	named: 'MyLanguage' 
 	withEntryPoint: 'System log: ''hello world''. 
         System quit.').
@@ -48,24 +50,24 @@ language loadLanguageModelDefinitions: '/path/to/repo' asFileReference.
 language browse.
 
 "generate the kernel in memory"
-myLanguage generate.
+language generate.
 
 "before writing the kernel to disk, you can execute code directly in your kernel, and even debug it!"
 language evaluateCode: '#(1 2 3) size'.
 language debugCode: '#(1 2 3) size'.
 
 "write the kernel to disk"
-myLanguage writeImage.
+language writeImage.
 
 "execute it using the external Pharo VM"
-myLanguage imageInDisk executeInVM.
+language imageInDisk executeInVM.
 
 ```
 ## Debugging the generated kernel
 When the Pharo VM fails to execute the generated kernel, it is possible to debug the VM code using the Pharo debugger by loadinig the generated kernel into Pharo and executing the kernel using the Pharo VM simulator.
 ```Smalltalk
 "execute the image from the host, using the VM Simulator"
-myLanguage imageInDisk executeInVMSimulator.
+language imageInDisk executeInVMSimulator.
 ```	
 
 # Examples
