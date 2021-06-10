@@ -518,11 +518,15 @@ PBImageBuilderGeneric >> initializeGlobals [
 		do: [ :globalVar | 
 			" Create one global for each global variable in the language definition "
 			bootstrapEnvironment at: globalVar name asSymbol put: nilObj.
-			self assert: (self bootstrapEnvironment at: globalVar name asSymbol) = nilObj ].
-	bootstrapEnvironment at: #Processor put: self objectSpace nilObject.
+			self
+				assert: (self bootstrapEnvironment at: globalVar name asSymbol) = nilObj.
+			self assert: globalVar name ~= 'Undeclared' ].
+	"bootstrapEnvironment 
+		at: #Processor put: self objectSpace nilObject."
+
+	"#Undeclared is required by the interpreted"
 	bootstrapEnvironment
-		at: #Undeclared
-		put: (EP2RemoteDictionary newWithBackend: espellBackend)
+		at: #Undeclared put: (EP2RemoteDictionary newWithBackend: espellBackend)
 ]
 
 { #category : #'special objects array' }
