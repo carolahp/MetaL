@@ -204,43 +204,31 @@ PBImageBuilderGeneric >> createFirstObjectsStubs [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createInitialObjects [
-	| remoteSystemDictionary smalltalkImageDef smalltalk smalltalkinstance |
+	| remoteSystemDictionary |
 	" Initialize globals in the bootstrap environment "
-	self initializeGlobals.
-	" create the remote systemDictionary by evaluating a hook, or by creating an empty dictionary if the hook is not set "
-	
-	remoteSystemDictionary := self systemDefinition hookInitalizeGlobals
-		ifNil: [ remoteSystemDictionary := (EP2RemoteSystemDictionary
-				newWithBackend: espellBackend) asRemoteDictionary ].
-	" set the objectSpace reference to the remote systemDictionary "
+	" create a temporary system dictionary to allow reflective instructions execution when creating the real system dictionary"
+	remoteSystemDictionary := (EP2RemoteSystemDictionary
+		newWithBackend: espellBackend) asRemoteDictionary.
+	"set the objectSpace reference to the temporary systemDictionary"
 	self objectSpace systemDictionary
 		withSystemDictionary: remoteSystemDictionary.
+	self languageDefinition globalVariablesSorted
+		do: [ :glob | 
+			glob installStub.
+			glob setValue: glob initialValue ].
 
-	smalltalkinstance := self systemDefinition hookCreateSmalltalkInstance.
-	smalltalkinstance ifNotNil: [ espellBackend smalltalkInstance: smalltalkinstance ].
-	self systemDefinition hookInitializeClassStubs.
+	" create the definitive remote systemDictionary by evaluating a hook. If the hook returns nil, keep the stub system dictionary "
+	remoteSystemDictionary := (self systemDefinition
+		createRemoteSystemDictionary ifNil: [ remoteSystemDictionary ])
+		asRemoteSystemDictionary.
 
-	
-	"Adding essential globals to system dictionary"
-	"bootstrapEnvironment
-		associationsDo: [ :assoc | 			
-			objectSpace systemDictionary
-				at: assoc key
-				ifAbsentPut: assoc value ]."
+	"install globals with their definitive value"
+	self systemDefinition globalVariables
+		do: [ :glob | 
+			glob remoteIsStub: false.
+			glob register ].
 
-	"update the bootstrapEnvironment associations according to the contents of the new systemDictionary "
-	objectSpace systemDictionary
-		associationsDo: [ :assoc | 
-			bootstrapEnvironment
-				at: assoc key asRemoteByteString asLocalByteString asSymbol
-				put: assoc value ].
-	objectSpace systemDictionary
-		at: #Processor
-		ifAbsentPut: (bootstrapEnvironment at: #Processor).
-	objectSpace systemDictionary
-		at: #Undeclared
-		ifAbsentPut: (bootstrapEnvironment at: #Undeclared).
-	self systemDefinition hookCreateInitialObjects evaluate
+	self systemDefinition hookCreateInitialObjects.
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -510,13 +498,16 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 ]
 
 { #category : #globals }
-PBImageBuilderGeneric >> initializeGlobals [
+PBImageBuilderGeneric >> initializeGlobalsInBootstrapEnvironment [
 	| nilObj |
+	self deprecated: 'use GlobalModel >> install'.
 	nilObj := objectSpace nilObject.
 	" set globals required by bootstrap "
 	self languageDefinition globalVariables
 		do: [ :globalVar | 
 			" Create one global for each global variable in the language definition "
+			self halt.
+			globalVar install.
 			bootstrapEnvironment at: globalVar name asSymbol put: nilObj.
 			self
 				assert: (self bootstrapEnvironment at: globalVar name asSymbol) = nilObj.
@@ -678,6 +669,15 @@ PBImageBuilderGeneric >> prepareSimulatorForExecution [
 		assimilateNewSegment: (self objectMemory segmentManager segments at: 0);
 		setCheckForLeaks: 0;
 		runLeakCheckerForFullGC.
+]
+
+{ #category : #registering }
+PBImageBuilderGeneric >> registerGlobal: anEP2Remote definition: aGlobalModel fullyLoaded: aBoolean [ 
+	| name value |
+	name := aGlobalModel name.
+	value := anEP2Remote.
+	self objectSpace systemDictionary at: name put: value.
+	self bootstrapEnvironment at: name put: value
 ]
 
 { #category : #'accessing-classes-installed' }

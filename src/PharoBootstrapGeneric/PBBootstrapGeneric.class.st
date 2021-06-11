@@ -100,26 +100,32 @@ PBBootstrapGeneric >> installOnlyMarkedMethods: aBoolean [
 
 { #category : #'bootstrap4-install process' }
 PBBootstrapGeneric >> installProcess [
-	| association process processor |
+	| association process processor languageDefinition |
 	builder initializeSpecialObjectArray.
+	languageDefinition := builder systemDefinition.
+	processor := (languageDefinition globalWithRole: #Processor) initialValue.
 	
-	processor := builder systemDefinition hookInitializeProcessScheduler.
-	builder bootstrapEnvironment at: #Processor put: processor. 
-	builder objectSpace systemDictionary at: #Processor put: processor.
-	
-	association := (builder classNamed: #Association) basicNew asRemoteAssociation
+	association := (builder classNamed: #Association) basicNew
+		asRemoteAssociation
 		key: (#Processor asRemoteObjectInObjectSpace: builder objectSpace);
-		value: (builder bootstrapEnvironmentAt: #Processor);
+		value: processor;
 		yourself.
+	
 	builder objectSpace backend processorAssociation: association.
-	
-	process := builder objectSpace createProcessWithPriority: 3 doing: (builder systemDefinition classMetaclass name, ' entryPoint') asString withTemps: #().
- 	builder objectSpace installAsActiveProcess: process withProcessor: (builder bootstrapEnvironment at: #Processor).
-	
-	(builder systemDefinition hookSetSpecialObjectsArray: builder objectSpace backend specialObjectsArray).
+	process := builder objectSpace
+		createProcessWithPriority: 3
+		doing:
+			(builder systemDefinition classMetaclass name , ' entryPoint')
+				asString
+		withTemps: #().
+	builder objectSpace
+		installAsActiveProcess: process
+		withProcessor: processor.
+		
+	builder systemDefinition
+		hookSetSpecialObjectsArray: builder objectSpace backend specialObjectsArray.
 	
 	builder followForwardingPointers.
-
 	self inform: 'Image Generated successfully'
 ]
 
