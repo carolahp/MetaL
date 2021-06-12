@@ -57,7 +57,7 @@ PBClassLoaderGeneric >> classForClassMirror: anEPClassMirror [
 
 { #category : #'accessing-classes-installed' }
 PBClassLoaderGeneric >> classNamed: aString [ 
-	
+	self deprecated: 'use (LanguageDefinition >> classNamed) and then ensure the remote is installed'.
 	^ ((self bootstrapEnvironmentAt: aString) 
 		ifNil: [ self loadClassNamed: aString ]) asRemoteClass
 ]
@@ -76,11 +76,11 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 					aClassDefinition installStub ] ].
 	
 	newBehavior := (self systemDefinition
-		hookInstallClass: aClassDefinition) asRemoteClass.
+		installClass: aClassDefinition) asRemoteClass.
 	
 	"register class in remote globals"
 	self systemDefinition
-		hookRegisterClass: newBehavior
+		registerClass: newBehavior
 		fromDefinition: aClassDefinition.
 	 "we register the installed class in the remote system dictionary only if it's the fully loaded version"
 	(self systemDefinition
@@ -90,39 +90,6 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 		evaluate.
 	
 	self systemDictionary at: aClassDefinition name put: newBehavior
-]
-
-{ #category : #'stubs-class-creation' }
-PBClassLoaderGeneric >> createClassStubForDefinition: aRGBehavior [
-	
-	| class metaclass |	
-	self deprecated: 'Use EP2Class >> hookInstallStub instead'.
-	metaclass := self metaclassClass basicNew asRemoteMetaclass.
-	metaclass format: aRGBehavior metaclass format.
-	metaclass setHashBitsTo: self newClassIndex.
-	self registerClass: metaclass definition: aRGBehavior metaclass fullyLoaded: false.
-	
-	class := metaclass basicNew asRemoteClass.
-	class format: aRGBehavior format.
-	class setHashBitsTo: self newClassIndex.
-	self registerClass: class definition: aRGBehavior fullyLoaded: false.
-	self assert: class basicClass = metaclass .
-	
-	^ class
-]
-
-{ #category : #'stubs-class-creation' }
-PBClassLoaderGeneric >> createStubForClass: aRGBehavior [
-	self deprecated: 'Use EP2Class >> hookInstallStub instead'.
-	^ aRGBehavior isBehavior
-		ifTrue: [ self createClassStubForDefinition: aRGBehavior ]
-		ifFalse: [ self error: 'Error while creating the class stub!' ]
-]
-
-{ #category : #'class-creation-stubs' }
-PBClassLoaderGeneric >> createStubForClassNamed: aString [ 
-	self deprecated: 'use EP2Class >> installStub instead'.
-	^ self createStubForClass: (self systemDefinitionAt: aString)
 ]
 
 { #category : #'stubs-instance-creation' }
@@ -193,6 +160,7 @@ PBClassLoaderGeneric >> initialize [
 PBClassLoaderGeneric >> initializeClassPool: aClassName [
 
 	| definition class classPool classVariableBindings |
+	self deprecated: 'implement this in your ClassModel subclass and call it from LanguageModel>>createInitialObjects'.
 	definition := self systemDefinitionAt: aClassName.
 	classVariableBindings := definition classVarNames collect: [ :each | | classVar |
 		classVar := (self builder remoteClass: #ClassVariable) basicNew asRemoteAssociation.
@@ -206,17 +174,6 @@ PBClassLoaderGeneric >> initializeClassPool: aClassName [
 	class name: aClassName.
 	class classPool: classPool.
 	^ class
-]
-
-{ #category : #'initializing-classes' }
-PBClassLoaderGeneric >> initializeClassPools [
-	self deprecated: 'use methods in the metamodel behaviors'.
-	"shouldInitializeClassPool := true."
-	self bootstrapEnvironment keysDo: [ :name | | definition |
-			definition := self systemDefinition classNamed: name.
-			(definition isNotNil and: [definition isBehavior and: [definition isMetaclass not]]) 
-				ifTrue: [ self initializeClassPool: definition name ]	
-		 ]
 ]
 
 { #category : #registering }
@@ -258,19 +215,10 @@ PBClassLoaderGeneric >> lastClassIndex [
 { #category : #'class-creation' }
 PBClassLoaderGeneric >> loadClassNamed: aString [
 	| classDef |
+	self deprecated: 'use ClassModel >> installStub'.
 	classDef := self systemDefinitionAt: aString.
 	classDef installStub.
 	^ classDef remote
-]
-
-{ #category : #'instance-creation' }
-PBClassLoaderGeneric >> localArrayAsRemoteDictionary: aCollection [
-	self deprecated: 'use EP2RemoteArray>>asDictionary instead'.
-	^ builder bootstrapInterpreter
-		evaluateCode: 'aClassVariableNamesCollection asDictionary'
-		withTemps: { 
-			'aClassVariableNamesCollection' -> aCollection
-		}.
 ]
 
 { #category : #'accessing-mapping-mirrors/definitions' }
@@ -278,19 +226,6 @@ PBClassLoaderGeneric >> map: aClassMirror with: aDefinition [
 	"We create a mapping between the real classes and their definitions for later"
 	addressDefinitionMap at: aClassMirror target address put: aDefinition.
 	aDefinition propertyNamed: #address put: aClassMirror target address
-]
-
-{ #category : #'stubs-class-creation' }
-PBClassLoaderGeneric >> metaclassClass [
-	"Base case for recursion on class creation.
-	Ok, so here we really go down and create the metaclass from nothing. We will use this metaclass to create all the others"
-
-	| aRGBehavior  |
-	" If the metaclass was already created, it will be found in the bootstrapEnvironment dictionary "
-	(self bootstrapEnvironmentAt: #Metaclass)
-		ifNotNil: [ :aClass | ^ aClass ].
-	^ self systemDefinition hookCreateMetaclassStubWithClassLoader: self.
-	
 ]
 
 { #category : #'class-registration' }
@@ -333,12 +268,6 @@ PBClassLoaderGeneric >> registerClass: aClassMirror definition: aRGObject fullyL
 ]
 
 { #category : #'class-registration' }
-PBClassLoaderGeneric >> registerClass: aClassMirror named: aString [ 
-	self deprecated: 'use registerClass:definition:fullyLoaded:'.
-	self registerClass: aClassMirror named: aString fullyLoaded: false
-]
-
-{ #category : #'class-registration' }
 PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded: aBoolean [
 	| definition |
 	definition := self systemDefinition classNamed: className.
@@ -362,33 +291,6 @@ PBClassLoaderGeneric >> registerClass: aClassMirror named: className fullyLoaded
 
 	"We reset the class map of the ast interpreter"
 	self fullyLoaded at: className put: aBoolean
-]
-
-{ #category : #'class-registration' }
-PBClassLoaderGeneric >> registerClassInClassTable: aClassMirror [
-
-	"Use this only after setting the class index of aClassMirror using 
-	'aClassMirror setHashBitsTo: aClassTableIndex' "
-	|oldAddress newAddress| 
-	self deprecated: 'use installClass:inClassTableIndex:'.	
-	"we perform validations before registering the class"
-	self assert: aClassMirror isNilObject not.
-	self assert: aClassMirror backend simulator objectMemory classTableRootObj isNotNil.
-	self assert: (aClassMirror target isKindOf: EP2Handle).
-	self assert: aClassMirror classTableIndex isNotNil.
-	oldAddress:= aClassMirror target address.
-	self assert: aClassMirror target asClassIndexHandle address notNil.
-	"we register the class in the class table"
-	self builder objectSpace backend objectMemory classAtIndex: aClassMirror classTableIndex put: aClassMirror target address.	
-	aClassMirror target: (aClassMirror target asClassIndexHandle).
-	newAddress := aClassMirror target address.
-	self assert: newAddress = oldAddress.
-	
-]
-
-{ #category : #'class-registration' }
-PBClassLoaderGeneric >> registerClassInClassTable: aClassMirror atIndex: anInteger [ 
-	self deprecated: 'use registerClassInClassTable:'
 ]
 
 { #category : #'stubs-class-creation' }

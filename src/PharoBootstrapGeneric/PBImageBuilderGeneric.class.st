@@ -166,7 +166,7 @@ PBImageBuilderGeneric >> createBehaviorFromDefinition: aRGBehavior [
 
 { #category : #'bootstrap2-classes' }
 PBImageBuilderGeneric >> createClasses [
-	self systemDefinition hookInstallClasses
+	self systemDefinition installClasses
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -228,7 +228,7 @@ PBImageBuilderGeneric >> createInitialObjects [
 			glob remoteIsStub: false.
 			glob register ].
 
-	self systemDefinition hookCreateInitialObjects.
+	self systemDefinition createInitialObjects.
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -242,12 +242,6 @@ PBImageBuilderGeneric >> createNil [
 	
 	objectSpace nilObject: nilObject .
 	^ objectSpace nilObject
-]
-
-{ #category : #'bootstrap1-stubs' }
-PBImageBuilderGeneric >> createStubForClassNamed: aString [ 
-	self deprecated: 'use methods in behaviors metamodel'.
-	^ self classLoader createStubForClassNamed: aString
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -272,13 +266,10 @@ PBImageBuilderGeneric >> createTrue [
 PBImageBuilderGeneric >> createVMStubs [
 	self createFirstObjectsStubs.
 	
-	self systemDefinition hookInstallStubs.
+	self systemDefinition installStubs.
 	
 	self setFirstObjectsStubClasses.
 	self fillSpecialObjectsArrayWithStubs.
-	
-	self flag: 'owner custom code, replace by hook'.
-	self classNamed: #ProtoObject
 ]
 
 { #category : #debugging }
@@ -343,49 +334,49 @@ PBImageBuilderGeneric >> espellBackend [
 PBImageBuilderGeneric >> fillSpecialObjectsArrayWithStubs [
 
 	objectSpace backend
-		smallIntegerClass: (self classNamed: #SmallInteger).
+		smallIntegerClass: (self remoteClass: #SmallInteger).
 	objectSpace backend
-		characterClass: (self classNamed: #Character).
+		characterClass: (self remoteClass: #Character).
 	objectSpace backend
-		byteSymbolClass: (self classNamed: #ByteSymbol).
+		byteSymbolClass: (self remoteClass: #ByteSymbol).
 	objectSpace backend
-		byteStringClass: (self classNamed: #ByteString).
+		byteStringClass: (self remoteClass: #ByteString).
 	objectSpace backend
-		byteArrayClass: (self classNamed: #ByteArray).
+		byteArrayClass: (self remoteClass: #ByteArray).
 	objectSpace backend
-		associationClass: (self classNamed: #Association).
+		associationClass: (self remoteClass: #Association).
 	objectSpace backend
-		arrayClass: (self classNamed: #Array).
+		arrayClass: (self remoteClass: #Array).
 	objectSpace backend
 		symbolTableClass: objectSpace backend byteSymbolClass.
 	objectSpace backend
-		largeNegativeIntegerClass: (self classNamed: #LargeNegativeInteger).
+		largeNegativeIntegerClass: (self remoteClass: #LargeNegativeInteger).
 	objectSpace backend
-		largePositiveIntegerClass: (self classNamed: #LargePositiveInteger).
+		largePositiveIntegerClass: (self remoteClass: #LargePositiveInteger).
 	objectSpace backend
-		methodClass: (self classNamed: #CompiledMethod).
+		methodClass: (self remoteClass: #CompiledMethod).
 	objectSpace backend
-		floatClass: (self classNamed: #Float).
+		floatClass: (self remoteClass: #Float).
 	objectSpace backend
-		contextClass: (self classNamed: #Context).
+		contextClass: (self remoteClass: #Context).
 	objectSpace backend
-		processClass: (self classNamed: #Process).
+		processClass: (self remoteClass: #Process).
 	objectSpace backend
-		blockClass: (self classNamed: #BlockClosure).
+		blockClass: (self remoteClass: #BlockClosure).
 	objectSpace backend
-		messageClass: (self classNamed: #Message).
+		messageClass: (self remoteClass: #Message).
 
 	"Point is required in the special objects array because it is used to instantiate point objects faster.
 	If we do not put it here, the VM will crash.
 	Lots of tests in kernel use it."
 	objectSpace backend
-		pointClass: (self classNamed: #Point).
+		pointClass: (self remoteClass: #Point).
 	objectSpace backend
-		processorAssociation: (self classNamed: #Association) basicNew.
+		processorAssociation: (self remoteClass: #Association) basicNew.
 	objectSpace backend processorAssociation
-		value: (self classNamed: #ProcessorScheduler) basicNew.
+		value: (self remoteClass: #ProcessorScheduler) basicNew.
 	objectSpace backend
-		specialSelectors: ((self classNamed: #Array) basicNew: 64).
+		specialSelectors: ((self remoteClass: #Array) basicNew: 64).
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -497,33 +488,10 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	espellBackend objectSpace: objectSpace
 ]
 
-{ #category : #globals }
-PBImageBuilderGeneric >> initializeGlobalsInBootstrapEnvironment [
-	| nilObj |
-	self deprecated: 'use GlobalModel >> install'.
-	nilObj := objectSpace nilObject.
-	" set globals required by bootstrap "
-	self languageDefinition globalVariables
-		do: [ :globalVar | 
-			" Create one global for each global variable in the language definition "
-			self halt.
-			globalVar install.
-			bootstrapEnvironment at: globalVar name asSymbol put: nilObj.
-			self
-				assert: (self bootstrapEnvironment at: globalVar name asSymbol) = nilObj.
-			self assert: globalVar name ~= 'Undeclared' ].
-	"bootstrapEnvironment 
-		at: #Processor put: self objectSpace nilObject."
-
-	"#Undeclared is required by the interpreted"
-	bootstrapEnvironment
-		at: #Undeclared put: (EP2RemoteDictionary newWithBackend: espellBackend)
-]
-
 { #category : #'special objects array' }
 PBImageBuilderGeneric >> initializeSpecialObjectArray [
 	objectSpace specialObjectsArray: self newSpecialObjectsArray.
-	self systemDefinition hookInitializeSpecialObjectsArray
+	self systemDefinition initializeSpecialObjectsArray
 ]
 
 { #category : #'method installing' }
@@ -531,50 +499,12 @@ PBImageBuilderGeneric >> installExtensionMethods [
 	self flag: 'do nothing for now. There is no extension methods in Candle'
 ]
 
-{ #category : #'installing-methods' }
-PBImageBuilderGeneric >> installMethod: anEP2RemoteCompiledMethod inBehavior: anEP2RemoteClass [ 
-	self deprecated: 'use methods in behavior'.
-	(self systemDefinition hookInstallMethod: anEP2RemoteCompiledMethod inBehavior: anEP2RemoteClass) evaluate.
-	
-]
-
 { #category : #'bootstrap3-methods' }
 PBImageBuilderGeneric >> installMethods [
 	
-	self systemDefinition hookInstallMethods.
+	self systemDefinition installMethods.
 	
 	
-]
-
-{ #category : #'bootstrap3-methods' }
-PBImageBuilderGeneric >> installMethodsInBehaviorDefinition: behaviorDefinition prefixed: aPrefix [
-	| behaviorMirror  |
-	self deprecated: 'use methods in behavior instead'.
-	behaviorMirror := bootstrapEnvironment at: behaviorDefinition name.
-	self
-		installMethodsInBehaviorMapping: behaviorDefinition
-		using: self methodBuilder
-		onMirror: behaviorMirror
-		prefixed: aPrefix.
-	self
-		installMethodsInBehaviorMapping: behaviorDefinition classSide
-		using: self methodBuilder
-		onMirror: behaviorMirror basicClass
-		prefixed: aPrefix.
-]
-
-{ #category : #'bootstrap3-methods' }
-PBImageBuilderGeneric >> installMethodsInBehaviorMapping: aBehaviorMapping using: aMethodBuilder onMirror: mirror prefixed: aPrefix [
-	| newMethods theClass |
-	self deprecated: 'use methods in the model (behavior) instead'.
-	newMethods := (aMethodBuilder methodsFromDefinition: aBehaviorMapping) sorted: [ :a :b | a selector < b selector ].
-	theClass := (self classNamed: aBehaviorMapping theNonMetaClass name) asRemoteClass.
-	aBehaviorMapping isMeta ifTrue: [ theClass := theClass classSide ].
-	newMethods doWithIndex: [ :method :index |
-		"PBSubStepFinishedSignal emit: aPrefix, ' - ', index asString, '/', newMethods size asString, ': Installing method ', 
-			aBehaviorMapping name, '>>', method selector."
-		self installMethod: method inBehavior: theClass.
-	].
 ]
 
 { #category : #accessing }
@@ -682,7 +612,8 @@ PBImageBuilderGeneric >> registerGlobal: anEP2Remote definition: aGlobalModel fu
 
 { #category : #'accessing-classes-installed' }
 PBImageBuilderGeneric >> remoteClass: aString [ 
-	^ (self classLoader classNamed: aString) asRemoteClass
+
+	^ (languageDefinition classNamed: aString) ensureRemote asRemoteClass
 ]
 
 { #category : #'initializing image' }
@@ -709,11 +640,11 @@ PBImageBuilderGeneric >> reportSizes [
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> setFirstObjectsStubClasses [
 	objectSpace nilObject
-		setClass: (self classNamed: #UndefinedObject).
+		setClass: (self remoteClass: #UndefinedObject).
 	objectSpace falseObject
-		setClass: (self classNamed: #False).
+		setClass: (self remoteClass: #False).
 	objectSpace trueObject
-		setClass: (self classNamed: #True).
+		setClass: (self remoteClass: #True).
 	
 ]
 

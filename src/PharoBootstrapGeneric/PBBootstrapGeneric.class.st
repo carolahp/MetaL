@@ -105,7 +105,7 @@ PBBootstrapGeneric >> installProcess [
 	languageDefinition := builder systemDefinition.
 	processor := (languageDefinition globalWithRole: #Processor) initialValue.
 	
-	association := (builder classNamed: #Association) basicNew
+	association := (builder remoteClass: #Association) basicNew
 		asRemoteAssociation
 		key: (#Processor asRemoteObjectInObjectSpace: builder objectSpace);
 		value: processor;
