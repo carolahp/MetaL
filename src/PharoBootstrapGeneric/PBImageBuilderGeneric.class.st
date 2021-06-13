@@ -114,6 +114,7 @@ PBImageBuilderGeneric >> bootstrapEnvironment [
 { #category : #'accessing-environment' }
 PBImageBuilderGeneric >> bootstrapEnvironmentAt: aString [
 	| classDefinition |
+	self deprecated: 'Use EP2Environment instead'.
 	classDefinition := [ self systemDefinition classByRoleOrName: aString ]
 		on: PBClassDefinitionNotFound
 		do: [
