@@ -4,8 +4,7 @@ Class {
 	#instVars : [
 		'architecture',
 		'pbRepository',
-		'builder',
-		'installOnlyMarkedMethods'
+		'builder'
 	],
 	#classInstVars : [
 		'BaseLanguageModelRepository'
@@ -87,15 +86,9 @@ PBBootstrapGeneric >> installClasses [
 { #category : #'bootstrap3-methods' }
 PBBootstrapGeneric >> installMethods [
 	builder 
-		"installOnlyMarkedMethods: self installOnlyMarkedMethods;"
 		installMethods;
 		installExtensionMethods
 		
-]
-
-{ #category : #'selecting-methods' }
-PBBootstrapGeneric >> installOnlyMarkedMethods: aBoolean [ 
-	installOnlyMarkedMethods := aBoolean
 ]
 
 { #category : #'bootstrap4-install process' }

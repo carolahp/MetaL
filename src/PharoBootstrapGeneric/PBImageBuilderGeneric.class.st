@@ -10,7 +10,6 @@ Class {
 		'debuggerInterpreter',
 		'freeListsOop',
 		'classLoader',
-		'stubsReady',
 		'imageFileReference'
 	],
 	#category : #'PharoBootstrapGeneric-builders'
