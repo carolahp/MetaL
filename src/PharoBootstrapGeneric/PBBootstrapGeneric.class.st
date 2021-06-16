@@ -51,14 +51,6 @@ PBBootstrapGeneric >> builder [
 	^ builder
 ]
 
-{ #category : #initializing }
-PBBootstrapGeneric >> destroy [
-	builder ifNotNil: [
-		builder unload.
-		builder := nil].
-	
-]
-
 { #category : #accessing }
 PBBootstrapGeneric >> environment [
 	^ self pbRepository ringEnvironment
