@@ -100,8 +100,7 @@ PBBootstrapGeneric >> installProcess [
 	process := builder objectSpace
 		createProcessWithPriority: 3
 		doing:
-			(builder systemDefinition classMetaclass name , ' entryPoint')
-				asString
+			('nil ' , languageDefinition entryPointSelector) asString
 		withTemps: #().
 	builder objectSpace
 		installAsActiveProcess: process
