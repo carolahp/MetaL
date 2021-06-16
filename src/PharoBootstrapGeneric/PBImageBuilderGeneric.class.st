@@ -10,7 +10,8 @@ Class {
 		'debuggerInterpreter',
 		'freeListsOop',
 		'classLoader',
-		'imageFileReference'
+		'imageFileReference',
+		'stage'
 	],
 	#category : #'PharoBootstrapGeneric-builders'
 }
@@ -166,7 +167,8 @@ PBImageBuilderGeneric >> createBehaviorFromDefinition: aRGBehavior [
 
 { #category : #'bootstrap2-classes' }
 PBImageBuilderGeneric >> createClasses [
-	self systemDefinition installClasses
+	self systemDefinition installClasses.
+	stage := #classesReady
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -229,6 +231,7 @@ PBImageBuilderGeneric >> createInitialObjects [
 			glob register ].
 
 	self systemDefinition createInitialObjects.
+	stage := #initialObjectsReady
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -267,9 +270,12 @@ PBImageBuilderGeneric >> createVMStubs [
 	self createFirstObjectsStubs.
 	
 	self systemDefinition installStubs.
-	
+	self systemDefinition testStub.
 	self setFirstObjectsStubClasses.
+	self systemDefinition testStub.
 	self fillSpecialObjectsArrayWithStubs.
+	self systemDefinition testStub..
+	stage := #stubsReady
 ]
 
 { #category : #debugging }
@@ -332,7 +338,7 @@ PBImageBuilderGeneric >> espellBackend [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> fillSpecialObjectsArrayWithStubs [
-
+	
 	objectSpace backend
 		smallIntegerClass: (self remoteClass: #SmallInteger).
 	objectSpace backend
@@ -347,8 +353,9 @@ PBImageBuilderGeneric >> fillSpecialObjectsArrayWithStubs [
 		associationClass: (self remoteClass: #Association).
 	objectSpace backend
 		arrayClass: (self remoteClass: #Array).
-	objectSpace backend
-		symbolTableClass: objectSpace backend byteSymbolClass.
+	"not sure why this is here so I comment it"
+	"objectSpace backend
+		symbolTableClass: objectSpace backend byteSymbolClass."
 	objectSpace backend
 		largeNegativeIntegerClass: (self remoteClass: #LargeNegativeInteger).
 	objectSpace backend
@@ -485,7 +492,9 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	
 	objectSpace interpreter: bootstrapInterpreter.
 	objectSpace debuggerInterpreter: debuggerInterpreter.
-	espellBackend objectSpace: objectSpace
+	espellBackend objectSpace: objectSpace.
+	
+	 stage := #initializationReady
 ]
 
 { #category : #'special objects array' }
@@ -503,6 +512,7 @@ PBImageBuilderGeneric >> installExtensionMethods [
 PBImageBuilderGeneric >> installMethods [
 	
 	self systemDefinition installMethods.
+	stage := #methodsReady
 	
 	
 ]
@@ -613,7 +623,7 @@ PBImageBuilderGeneric >> registerGlobal: anEP2Remote definition: aGlobalModel fu
 { #category : #'accessing-classes-installed' }
 PBImageBuilderGeneric >> remoteClass: aString [ 
 
-	^ (languageDefinition classNamed: aString) ensureRemote asRemoteClass
+	^ (languageDefinition classNamed: aString) ensureRemote
 ]
 
 { #category : #'initializing image' }
@@ -656,6 +666,11 @@ PBImageBuilderGeneric >> simulator [
 { #category : #'accessing-environment' }
 PBImageBuilderGeneric >> spurImage [
 	^ EP2SpurImage onFirstObject: espellBackend nilObject
+]
+
+{ #category : #accessing }
+PBImageBuilderGeneric >> stage [
+	^ stage
 ]
 
 { #category : #accessing }
