@@ -167,8 +167,9 @@ PBImageBuilderGeneric >> createBehaviorFromDefinition: aRGBehavior [
 
 { #category : #'bootstrap2-classes' }
 PBImageBuilderGeneric >> createClasses [
-	self systemDefinition installClasses.
-	stage := #classesReady
+	
+	stage := #installingClasses.
+	self systemDefinition installClasses
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -207,6 +208,7 @@ PBImageBuilderGeneric >> createFirstObjectsStubs [
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createInitialObjects [
 	| remoteSystemDictionary |
+	stage := #installingInitialObjects.
 	" Initialize globals in the bootstrap environment "
 	" create a temporary system dictionary to allow reflective instructions execution when creating the real system dictionary"
 	remoteSystemDictionary := (EP2RemoteSystemDictionary
@@ -231,7 +233,7 @@ PBImageBuilderGeneric >> createInitialObjects [
 			glob register ].
 
 	self systemDefinition createInitialObjects.
-	stage := #initialObjectsReady
+	
 ]
 
 { #category : #'bootstrap1-stubs' }
@@ -267,6 +269,7 @@ PBImageBuilderGeneric >> createTrue [
 
 { #category : #'bootstrap1-stubs' }
 PBImageBuilderGeneric >> createVMStubs [
+	stage := #installingStubs.
 	self createFirstObjectsStubs.
 	
 	self systemDefinition installStubs.
@@ -275,7 +278,7 @@ PBImageBuilderGeneric >> createVMStubs [
 	self systemDefinition testStub.
 	self fillSpecialObjectsArrayWithStubs.
 	self systemDefinition testStub..
-	stage := #stubsReady
+	
 ]
 
 { #category : #debugging }
@@ -467,6 +470,7 @@ PBImageBuilderGeneric >> freeForwarders [
 { #category : #initializing }
 PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	self destroyBootstrapEnvironment.
+	stage := #initializing.
 	espellBackend := EP2Backend for32Bit forBootstrap.
 	espellBackend systemDefinition: self systemDefinition.
 	
@@ -499,13 +503,18 @@ PBImageBuilderGeneric >> initializeBootstrapEnvironment [
 	objectSpace debuggerInterpreter: debuggerInterpreter.
 	espellBackend objectSpace: objectSpace.
 	
-	 stage := #initializationReady
+	 
 ]
 
 { #category : #'special objects array' }
 PBImageBuilderGeneric >> initializeSpecialObjectArray [
 	objectSpace specialObjectsArray: self newSpecialObjectsArray.
 	self systemDefinition initializeSpecialObjectsArray
+]
+
+{ #category : #'stage checking' }
+PBImageBuilderGeneric >> initializing [
+	^ self stage = #initializing
 ]
 
 { #category : #'method installing' }
@@ -515,11 +524,30 @@ PBImageBuilderGeneric >> installExtensionMethods [
 
 { #category : #'bootstrap3-methods' }
 PBImageBuilderGeneric >> installMethods [
+	stage := #installingMethods.
+	self systemDefinition installMethods
 	
-	self systemDefinition installMethods.
-	stage := #methodsReady
 	
-	
+]
+
+{ #category : #'stage checking' }
+PBImageBuilderGeneric >> installingClasses [
+	^ self stage = #installingClasses
+]
+
+{ #category : #'stage checking' }
+PBImageBuilderGeneric >> installingInitialObjects [
+	^ self stage = #installingInitialObjects
+]
+
+{ #category : #'stage checking' }
+PBImageBuilderGeneric >> installingMethods [
+	^ self stage = #installingMethods
+]
+
+{ #category : #'stage checking' }
+PBImageBuilderGeneric >> installingStubs [
+	^ self stage = #installingStubs
 ]
 
 { #category : #accessing }
