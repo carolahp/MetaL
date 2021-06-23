@@ -216,8 +216,9 @@ PBImageBuilderGeneric >> createInitialObjects [
 	stage := #installingInitialObjects.
 	" Initialize globals in the bootstrap environment "
 	" create a temporary system dictionary to allow reflective instructions execution when creating the real system dictionary"
+	
 	remoteSystemDictionary := (EP2RemoteSystemDictionary
-		newWithBackend: espellBackend) asRemoteDictionary.
+		newWithBackend: espellBackend).
 	"set the objectSpace reference to the temporary systemDictionary"
 	self objectSpace systemDictionary
 		withSystemDictionary: remoteSystemDictionary.
