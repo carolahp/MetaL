@@ -101,6 +101,11 @@ PBImageBuilderGeneric >> at: aString ifAbsent: aBlockClosure [
 	^ aBlockClosure value
 ]
 
+{ #category : #'accessing backend' }
+PBImageBuilderGeneric >> backend [
+	^ objectSpace backend
+]
+
 { #category : #bindings }
 PBImageBuilderGeneric >> bindingOf: aName [
 	^ self bootstrapEnvironment bindingOf: aName 
