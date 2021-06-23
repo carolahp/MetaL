@@ -49,10 +49,11 @@ PBClassLoaderGeneric >> builder: aPBImageBuilderGeneric [
 
 { #category : #'accessing-mapping-mirrors/definitions' }
 PBClassLoaderGeneric >> classForClassMirror: anEPClassMirror [ 
+	
 	self assert: anEPClassMirror isRemoteClass.
-	^ anEPClassMirror asRGClass
-	"^ self addressDefinitionMap at: anEPClassMirror target address 
-		ifAbsent: [ self systemDefinitionAt: #Class ]"
+	"^ anEPClassMirror asRGClass"
+	^ self addressDefinitionMap at: anEPClassMirror target address 
+		ifAbsent: [ anEPClassMirror asRGClass ]
 ]
 
 { #category : #'accessing-classes-installed' }
