@@ -137,6 +137,12 @@ PBClassLoaderGeneric >> createStubInstanceOfArrayOfSize: anInteger [
 			classIndex: self builder arrayClassIndex.
 ]
 
+{ #category : #destroy }
+PBClassLoaderGeneric >> destroy [
+	addressDefinitionMap := nil.
+	builder := nil
+]
+
 { #category : #'interpret-code' }
 PBClassLoaderGeneric >> evaluate: aString temps: aCollectionOfAssociations [
 	^ self builder bootstrapInterpreter 

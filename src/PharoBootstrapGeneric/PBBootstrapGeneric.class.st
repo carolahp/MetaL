@@ -51,6 +51,12 @@ PBBootstrapGeneric >> builder [
 	^ builder
 ]
 
+{ #category : #destroy }
+PBBootstrapGeneric >> destroy [
+	builder := nil.
+	pbRepository := nil.
+]
+
 { #category : #accessing }
 PBBootstrapGeneric >> environment [
 	^ self pbRepository ringEnvironment
