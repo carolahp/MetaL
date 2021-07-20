@@ -1,4 +1,4 @@
-# PharoBootstrapGeneric
+# MetaL 
 Bootstrapper to generate images of small languages, which can be different from Pharo but run on top of the Pharo Virtual Machine (only 32 bits for the moment).
 Bootstrapper is a Pharo application that takes the definition of a new language and generates a file with extension .image, ready to be executed by the Pharo VM.
 
