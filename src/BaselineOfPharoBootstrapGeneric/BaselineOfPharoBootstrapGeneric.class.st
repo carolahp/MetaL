@@ -20,13 +20,13 @@ BaselineOfPharoBootstrapGeneric >> baseline: spec [
 						loads: 'core' ].
 			spec
 				baseline: 'Espell2'
-				with: [ spec repository: 'github://carolahp/espell2:generic-bootstrap' ].
+				with: [ spec repository: 'github://carolahp/espell2' ].
 			spec
 				baseline: 'LanguageMetamodels'
 				with: [ spec repository: 'github://carolahp/LanguageMetamodels:main' ].
 			spec
 				baseline: 'PBManager'
-				with: [ spec repository: 'github://carolahp/PBManager:generic-bootstrap' ].
+				with: [ spec repository: 'github://carolahp/PBManager' ].
 			spec package: 'PharoBootstrapGeneric' ]
 ]
 
