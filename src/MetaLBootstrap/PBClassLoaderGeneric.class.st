@@ -9,7 +9,7 @@ Class {
 	#classVars : [
 		'nextClassIndex'
 	],
-	#category : #'PharoBootstrapGeneric-builders'
+	#category : #'MetaLBootstrap-builders'
 }
 
 { #category : #'accessing-mapping-mirrors/definitions' }

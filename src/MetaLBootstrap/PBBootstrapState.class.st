@@ -14,7 +14,7 @@ Class {
 		'StubsStage',
 		'WriteImageStage'
 	],
-	#category : #'PharoBootstrapGeneric-builders'
+	#category : #'MetaLBootstrap-builders'
 }
 
 { #category : #accessing }
