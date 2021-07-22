@@ -1,6 +1,7 @@
 # MetaL 
-Bootstrapper to generate images of small languages, which can be different from Pharo but run on top of the Pharo Virtual Machine (only 32 bits for the moment).
-Bootstrapper is a Pharo application that takes the definition of a new language and generates a file with extension .image, ready to be executed by the Pharo VM.
+Metal is an application to bootstrap images of small languages (kernels).
+They can be different from Pharo but run on top of the Pharo 8.0 Virtual Machine (only 32 bits for the moment).
+MetaL takes the definition of a new language and generates a file with extension .image, ready to be executed by the Pharo VM.
 
 Generated images are small, thus we call them kernels.
 
@@ -11,13 +12,15 @@ This is an alternative to the bootstrapper provided in the official Pharo reposi
 <strong>Install only in Pharo 8.0</strong>
 
 # Installation
-The next code will install the bootstrapper and its dependencies (including [Espell](https://github.com/carolahp/espell/) and therefore the [Virtual Machine Simulator libraries](https://github.com/OpenSmalltalk/opensmalltalk-vm)).
+Install only in Pharo 8.0!
+
+The next code will install the bootstrapper and its dependencies (including [Espell2](https://github.com/carolahp/espell2/) and therefore the [Virtual Machine Simulator libraries](https://github.com/OpenSmalltalk/opensmalltalk-vm)).
 The VM Simulator is huge, so it will take a long time to load (around 20 minutes).
 
 ```Smalltalk
 [ Metacello new
-    baseline: 'PharoBootstrapGeneric';
-    repository: 'github://carolahp/PharoBootstrapGeneric';
+    baseline: 'MetaL';
+    repository: 'github://carolahp/MetaL';
     load ] on: Warning do: #resume.
 ```
 # Usage
