@@ -19,7 +19,7 @@ The VM Simulator is huge, so it will take a long time to load (around 20 minutes
 
 ```Smalltalk
 [ Metacello new
-    baseline: 'MetaL';
+    baseline: 'MetaLBootstrap';
     repository: 'github://carolahp/MetaL';
     load ] on: Warning do: #resume.
 ```
