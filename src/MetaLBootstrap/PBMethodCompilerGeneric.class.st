@@ -4,7 +4,7 @@ Class {
 	#instVars : [
 		'builder'
 	],
-	#category : #'PharoBootstrapGeneric-builders'
+	#category : #'MetaLBootstrap-builders'
 }
 
 { #category : #accessors }

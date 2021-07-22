@@ -9,7 +9,7 @@ Class {
 	#classInstVars : [
 		'BaseLanguageModelRepository'
 	],
-	#category : #'PharoBootstrapGeneric-core'
+	#category : #'MetaLBootstrap-core'
 }
 
 { #category : #'instance creation' }

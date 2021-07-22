@@ -1,11 +1,11 @@
 Class {
-	#name : #BaselineOfPharoBootstrapGeneric,
+	#name : #BaselineOfMetaLBootstrap,
 	#superclass : #BaselineOf,
-	#category : #BaselineOfPharoBootstrapGeneric
+	#category : #BaselineOfMetaLBootstrap
 }
 
 { #category : #baselines }
-BaselineOfPharoBootstrapGeneric >> baseline: spec [
+BaselineOfMetaLBootstrap >> baseline: spec [
 	<baseline>
 	spec
 		for: #common
@@ -27,11 +27,11 @@ BaselineOfPharoBootstrapGeneric >> baseline: spec [
 			spec
 				baseline: 'PBManager'
 				with: [ spec repository: 'github://carolahp/PBManager' ].
-			spec package: 'PharoBootstrapGeneric' ]
+			spec package: 'MetaLBootstrap' ]
 ]
 
 { #category : #baselines }
-BaselineOfPharoBootstrapGeneric >> postload: loader package: packageSpec [
+BaselineOfMetaLBootstrap >> postload: loader package: packageSpec [
 	PBBootstrapGeneric
 		baseLanguageModelRepository:
 			(IceRepository registry

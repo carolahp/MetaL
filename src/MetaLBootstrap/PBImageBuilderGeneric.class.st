@@ -13,7 +13,7 @@ Class {
 		'imageFileReference',
 		'stage'
 	],
-	#category : #'PharoBootstrapGeneric-builders'
+	#category : #'MetaLBootstrap-builders'
 }
 
 { #category : #'bootstrap1-stubs' }
