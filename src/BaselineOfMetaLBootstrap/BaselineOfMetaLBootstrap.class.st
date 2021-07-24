@@ -32,11 +32,17 @@ BaselineOfMetaLBootstrap >> baseline: spec [
 
 { #category : #baselines }
 BaselineOfMetaLBootstrap >> postload: loader package: packageSpec [
+	| url name |
+	
+	url := 'https://github.com/carolahp/PharoCandleSrc'.
+	"https://github.com/carolahp/KernelExplicitMetaclasses.git" 
+	name := 'PharoCandleSrc'.
+	"KernelExplicitMetaclasses"
 	PBBootstrapGeneric
 		baseLanguageModelRepository:
 			(IceRepository registry
-				detect: [ :repo | repo name = 'KernelExplicitMetaclasses' ]
+				detect: [ :repo | repo name = name ]
 				ifNone: [ (IceRepositoryCreator new
-						addRemote: 'https://github.com/carolahp/KernelExplicitMetaclasses.git';
+						addRemote: url;
 						createRepository) register ]) 
 ]
