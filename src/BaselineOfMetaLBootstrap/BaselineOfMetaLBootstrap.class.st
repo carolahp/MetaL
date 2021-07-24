@@ -26,7 +26,7 @@ BaselineOfMetaLBootstrap >> baseline: spec [
 				with: [ spec repository: 'github://carolahp/LanguageMetamodels:main' ].
 			spec
 				baseline: 'PBManager'
-				with: [ spec repository: 'github://carolahp/PBManager' ].
+				with: [ spec repository: 'github://carolahp/PBManager:v2.0' ].
 			spec package: 'MetaLBootstrap' ]
 ]
 
