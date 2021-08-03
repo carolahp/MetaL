@@ -102,7 +102,7 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 PBClassLoaderGeneric >> createStubForClassNamed: aString metaclassIndex: anInteger newClassIndex: anotherInteger [
 	" We install by hand (non reflectively) a stub that represents a class using as template its definition in the ring model (language definition) " 
 	| stub classDef metaclassIndex newClassIndex |
-	classDef := self classWithRole: aString.
+	classDef := self systemDefinition classNamed: aString.
 	metaclassIndex := anInteger.
 	newClassIndex := anotherInteger.
 	" First we create a zero sized stub object that represents the class.
