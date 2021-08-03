@@ -63,6 +63,11 @@ PBClassLoaderGeneric >> classNamed: aString [
 		ifNil: [ self loadClassNamed: aString ]) asRemoteClass
 ]
 
+{ #category : #'stubs-instance-creation' }
+PBClassLoaderGeneric >> classWithRole: aString [
+	^ self systemDefinition classWithRole: aString
+]
+
 { #category : #'class-creation' }
 PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 	| newBehavior |
@@ -97,12 +102,12 @@ PBClassLoaderGeneric >> createBehaviorFromDefinition: aClassDefinition [
 PBClassLoaderGeneric >> createStubForClassNamed: aString metaclassIndex: anInteger newClassIndex: anotherInteger [
 	" We install by hand (non reflectively) a stub that represents a class using as template its definition in the ring model (language definition) " 
 	| stub classDef metaclassIndex newClassIndex |
-	classDef := self systemDefinitionAt: aString.
+	classDef := self classWithRole: aString.
 	metaclassIndex := anInteger.
 	newClassIndex := anotherInteger.
 	" First we create a zero sized stub object that represents the class.
 	We do so by creating an instance of its metaclass "
-	stub := (self createStubInstanceOf: classDef metaclass name classIndex: metaclassIndex) asRemoteClass.
+	stub := (self createStubInstanceOf: classDef metaclass classIndex: metaclassIndex) asRemoteClass.
 	
 	" Then we set its format (this is saved in the third instance variable of classes)"
 	stub format: classDef format.
@@ -116,10 +121,10 @@ PBClassLoaderGeneric >> createStubForClassNamed: aString metaclassIndex: anInteg
 ]
 
 { #category : #'stubs-instance-creation' }
-PBClassLoaderGeneric >> createStubInstanceOf: aClassName classIndex: anInteger [
+PBClassLoaderGeneric >> createStubInstanceOf: aClassModel classIndex: anInteger [
 	" A basic stub is an object of size 0 and its class index saved in its header "
 	| format stub classIndex |
-	format := (self systemDefinitionAt: aClassName) format.
+	format := aClassModel format.
 	classIndex := anInteger.
 	stub := (self backend
 			createObjectWithFormat: format 
@@ -132,7 +137,7 @@ PBClassLoaderGeneric >> createStubInstanceOf: aClassName classIndex: anInteger [
 { #category : #'stubs-instance-creation' }
 PBClassLoaderGeneric >> createStubInstanceOfArrayOfSize: anInteger [ 
 	^ self backend
-			createObjectWithFormat: (self systemDefinitionAt: #Array) format 
+			createObjectWithFormat: (self classWithRole: #Array) format 
 			withSize: 60
 			classIndex: self builder arrayClassIndex.
 ]
@@ -312,6 +317,7 @@ PBClassLoaderGeneric >> systemDefinition [
 
 { #category : #'accessing-classes-definitions' }
 PBClassLoaderGeneric >> systemDefinitionAt: aString [ 
+	self deprecated: 'use classWithRole'.
 	^ self builder systemDefinitionAt: aString 
 ]
 

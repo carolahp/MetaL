@@ -152,6 +152,11 @@ PBImageBuilderGeneric >> classNamed: aString [
 	^ self classLoader classNamed: aString
 ]
 
+{ #category : #'accessing model' }
+PBImageBuilderGeneric >> classWithRole: aString [ 
+	^ self systemDefinition classWithRole: aString 
+]
+
 { #category : #'initializing image' }
 PBImageBuilderGeneric >> compactImage [
 	| firstFree lastUsed newHeap |
@@ -183,7 +188,7 @@ PBImageBuilderGeneric >> createFalse [
 	| falseObject |
 	
 	falseObject := self classLoader 
-		createStubInstanceOf: #False 
+		createStubInstanceOf: (self classWithRole: #False) 
 		classIndex: self classLoader newClassIndex.
 	
 	objectSpace falseObject: falseObject.
@@ -248,7 +253,7 @@ PBImageBuilderGeneric >> createNil [
 	| nilObject |
 	
 	nilObject := self classLoader 
-		createStubInstanceOf: #UndefinedObject 
+		createStubInstanceOf: (self classWithRole: #UndefinedObject) 
 		classIndex: self classLoader newClassIndex.
 	
 	objectSpace nilObject: nilObject .
@@ -266,7 +271,7 @@ PBImageBuilderGeneric >> createTrue [
 	| trueObject |
 	
 	trueObject := self classLoader 
-		createStubInstanceOf: #True 
+		createStubInstanceOf: (self classWithRole: #True) 
 		classIndex: self classLoader newClassIndex.
 	
 	objectSpace trueObject: trueObject.
@@ -447,7 +452,7 @@ PBImageBuilderGeneric >> followForwardingPointers [
 
 { #category : #utils }
 PBImageBuilderGeneric >> formatOf: aClassRole [ 
-	^ (self systemDefinitionAt: aClassRole) format
+	^ (self classWithRole: aClassRole) format
 ]
 
 { #category : #'initializing image' }
@@ -661,7 +666,7 @@ PBImageBuilderGeneric >> registerGlobal: anEP2Remote definition: aGlobalModel fu
 { #category : #'accessing-classes-installed' }
 PBImageBuilderGeneric >> remoteClass: aString [ 
 
-	^ (languageDefinition classNamed: aString) ensureRemote
+	^ (self classWithRole: aString) ensureRemote
 ]
 
 { #category : #'initializing image' }
