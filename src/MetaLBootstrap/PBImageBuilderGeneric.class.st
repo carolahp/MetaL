@@ -288,7 +288,7 @@ PBImageBuilderGeneric >> createVMStubs [
 	self setFirstObjectsStubClasses.
 	self systemDefinition testStub.
 	self fillSpecialObjectsArrayWithStubs.
-	self systemDefinition testStub..
+	self systemDefinition testStub.
 	
 ]
 
