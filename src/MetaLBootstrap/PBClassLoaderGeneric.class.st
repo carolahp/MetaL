@@ -203,6 +203,74 @@ PBClassLoaderGeneric >> installClass: aClassMirror inClassTableIndex: anInteger 
 
 ]
 
+{ #category : #'stubs-class-creation' }
+PBClassLoaderGeneric >> installMulticlassStubs: aCollection [
+	| names classes |
+	" ensure the metaclass of each class-model in the collection is present  "
+	names := aCollection collect: #name.
+	classes := #() asOrderedCollection.
+	aCollection
+		do: [ :class | 
+			(names anySatisfy: [ :c | c = class metaclass name ])
+				ifFalse: [ classes add: class metaclass ] ].
+	classes addAll: aCollection.
+	"calculate index in class table"
+	classes
+		do: [ :class | 
+			class indexInClassTable
+				ifNil: [ class indexInClassTable: self newClassIndex ] ].
+	"create stubs for each class and register"
+	classes
+		do: [ :class | 
+			class remoteIsInstalled
+				ifFalse: [ 
+					self installStubBasic: class ] ].
+	classes do: [ :class | class testStub ]
+]
+
+{ #category : #'installing stubs' }
+PBClassLoaderGeneric >> installStub: aClassModel [ 
+	" I install the stub of my corresponding class in the kernel.
+	I depend on the implementation of installStubCustom "
+
+	aClassModel remoteIsInstalled
+		ifTrue: [ ^ aClassModel remote ].
+	((aClassModel parent firstMetaclasses includes: aClassModel)
+		or: [ aClassModel metaclass = aClassModel or: [ aClassModel metaclass metaclass = aClassModel ] ])
+		ifTrue: [ self
+				error:
+					'Use LanguageModel >> installMulticlassStubs to install required classes' ].
+	aClassModel indexInClassTable
+		ifNil: [ aClassModel indexInClassTable: self newClassIndex ].
+	self installStub: aClassModel metaclass.
+	self installStubBasic: aClassModel.
+	aClassModel testStub.
+	^ aClassModel remote
+]
+
+{ #category : #'installing stubs' }
+PBClassLoaderGeneric >> installStubBasic: aClassModel [
+	" I install the stub of aClassModel in the kernel "
+
+	aClassModel
+		remote:
+			(self
+				createStubForClassNamed: aClassModel name
+				metaclassIndex: aClassModel metaclass indexInClassTable
+				newClassIndex: aClassModel indexInClassTable).
+	self
+		registerClass: aClassModel remote
+		named: aClassModel name
+		fullyLoaded: false.
+	^ aClassModel remote
+]
+
+{ #category : #'stubs-class-creation' }
+PBClassLoaderGeneric >> installStubs [
+	
+	self installMulticlassStubs: self systemDefinition firstMetaclasses 
+]
+
 { #category : #accessing }
 PBClassLoaderGeneric >> instanceVariableMapping [
 	^ builder languageDefinition instanceVariableMapping
