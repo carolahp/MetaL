@@ -282,7 +282,7 @@ PBImageBuilderGeneric >> createTrue [
 PBImageBuilderGeneric >> createVMStubs [
 	stage := #installingStubs.
 	self createFirstObjectsStubs.
-	self systemDefinition installStubs.
+	self classLoader installStubs.
 	self systemDefinition testStub.
 	self setFirstObjectsStubClasses.
 	self systemDefinition testStub.
