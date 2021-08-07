@@ -1,18 +1,13 @@
 # MetaL 
-Metal is an application to bootstrap images of small languages (kernels).
-They can be different from Pharo but run on top of the Pharo 8.0 Virtual Machine (only 32 bits for the moment).
-MetaL takes the definition of a new language and generates a file with extension .image, ready to be executed by the Pharo VM.
+Metal is an application to bootstrap images of small languages (kernels) which run on top of the Pharo8.0 Virtual Machine.
+Bootstrapped languages can be different from Pharo.
 
-Generated images are small, thus we call them kernels.
+MetaL takes the definition of a new language and generates the kernel as a file with extension .image, ready to be executed by the Pharo8.0 VM.
 
-
-This is an alternative to the bootstrapper provided in the official Pharo repository, but it uses part of [@Guillep](https://github.com/guillep/) backend.
-
-# Requirements
-<strong>Install only in Pharo 8.0</strong>
+MetaL is an alternative to the bootstrapper provided in the official Pharo repository, but it uses part of [@Guillep](https://github.com/guillep/) backend.
 
 # Installation
-Install only in Pharo 8.0!
+<strong>Install only in a Pharo 8.0 image</strong>
 
 The next code will install the bootstrapper and its dependencies (including [Espell2](https://github.com/carolahp/espell2/) and therefore the [Virtual Machine Simulator libraries](https://github.com/OpenSmalltalk/opensmalltalk-vm)).
 The VM Simulator is huge, so it will take a long time to load (around 20 minutes).
