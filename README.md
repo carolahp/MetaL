@@ -21,8 +21,10 @@ The VM Simulator is huge, so it will take a long time to load (around 20 minutes
 
 # Generating your first Kernel
 Example Languages [LanguageMetamodels](https://github.com/carolahp/LanguageMetamodels), such as ObjVLisp and Candle are included.
-The simplest kernel is ObjVLisp.
-To generate it and execute it in a Pharo VM using the following code, the output is shown in the Transcript.
+The simplest one is ObjVLisp.
+Generate it and execute it in a Pharo VM using the following code.
+The message 'Hello from ObjVLisp', which was logged by the kernel execution is shown in the Transcript.
+
 ```Smalltalk
 objvlisp := (ObjVLispLanguage 
 	named: 'ObjVLisp' 
