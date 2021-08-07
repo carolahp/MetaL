@@ -18,7 +18,25 @@ The VM Simulator is huge, so it will take a long time to load (around 20 minutes
     repository: 'github://carolahp/MetaL';
     load ] on: Warning do: #resume.
 ```
-# Usage
+
+# Generating your first Kernel
+Example Languages [LanguageMetamodels](https://github.com/carolahp/LanguageMetamodels), such as ObjVLisp and Candle are included.
+The simplest kernel is ObjVLisp.
+To generate it and execute it in a Pharo VM using the following code, the output is shown in the Transcript.
+```Smalltalk
+objvlisp := (ObjVLispLanguage 
+	named: 'ObjVLisp' 
+	withEntryPoint: 'System log: ''Hello from ObjVLisp''. 
+        System quit.').
+objvlisp generate.
+objvlisp writeImage.
+objvlisp imageInDisk executeInVM.
+
+```
+
+# Generating custom Kernels
+To define your own languages, follow the next steps.
+
 ## Extending the language meta-model
 Extend the class LanguageModel to define the class representing your language, as follows.
 Implement corresponding hooks.
@@ -60,19 +78,4 @@ language writeImage.
 "execute it using the external Pharo VM"
 language imageInDisk executeInVM.
 
-```
-## Debugging the generated kernel
-When the Pharo VM fails to execute the generated kernel, it is possible to debug the VM code using the Pharo debugger by loadinig the generated kernel into Pharo and executing the kernel using the Pharo VM simulator.
-```Smalltalk
-"execute the image from the host, using the VM Simulator"
-language imageInDisk executeInVMSimulator.
-```	
-
-# Examples
-Example Languages [LanguageMetamodels](https://github.com/carolahp/LanguageMetamodels) are included, the simplest one is ObjVLisp.
-```Smalltalk
-objvlisp := (ObjVLispLanguage 
-	named: 'ObjVLisp' 
-	withEntryPoint: 'System log: ''Hello from ObjVLisp''. 
-        System quit.').
 ```
