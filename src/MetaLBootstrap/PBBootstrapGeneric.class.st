@@ -116,7 +116,7 @@ PBBootstrapGeneric >> installProcess [
 		hookSetSpecialObjectsArray: builder objectSpace backend specialObjectsArray.
 	
 	builder followForwardingPointers.
-	self inform: 'Image Generated successfully'
+	self inform: 'Image Generated successfully in memory'
 ]
 
 { #category : #'bootstrap1-stubs' }
