@@ -28,6 +28,18 @@ PBBootstrapGeneric class >> baseLanguageModelRepository: anIceRepository [
 ]
 
 { #category : #'instance creation' }
+PBBootstrapGeneric class >> checkoutRepositories [
+	| repos branches repoNames |
+	repoNames := #('MetaL' 'espell2' 'PBManager' 'LanguageMetamodels' 'espell' 'DebuggableASTInterpreter' 'PHANtom' 'PharoImageInspector' 'PBHybridDebugger').
+	repos := IceLibgitRepository allInstances
+		select: [ :rep | repoNames includes: rep name ].
+	branches := repos
+		collect:
+			[ :rep | (rep allBranches select: [ :branch | branch isHead ]) anyOne ].
+	branches do: #checkout
+]
+
+{ #category : #'instance creation' }
 PBBootstrapGeneric class >> for32Bits [
 
 	^ self forArchitecture: '32'
