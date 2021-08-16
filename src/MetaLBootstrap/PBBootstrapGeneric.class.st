@@ -20,6 +20,8 @@ PBBootstrapGeneric class >> baseLanguageModelLocation [
 { #category : #'instance creation' }
 PBBootstrapGeneric class >> baseLanguageModelRepository [
 	^ BaseLanguageModelRepository
+		ifNil: [ BaseLanguageModelRepository := (IceRepository registry
+				detect: [ :repo | repo name = 'KernelExplicitMetaclasses' ]) ]
 ]
 
 { #category : #'instance creation' }
