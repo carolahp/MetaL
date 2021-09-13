@@ -27,7 +27,7 @@ The message 'Hello from ObjVLisp', which was logged by the kernel execution is s
 
 ```Smalltalk
 objvlisp := (ObjVLispMinLanguage 
-	named: 'ObjVLisp' 
+	newWithName: 'ObjVLisp' 
 	withEntryPoint: 'System log: ''Hello from ObjVLisp''. 
         System quit.').
 objvlisp generate.
@@ -55,7 +55,7 @@ Execute the next code in the Playground to generate your own kernel.
 
 "instantiate the language model"
 language := (MyLanguage 
-	named: 'MyLanguage' 
+	newWithName: 'MyLanguage' 
 	withEntryPoint: 'System log: ''hello world''. 
         System quit.').
 
