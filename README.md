@@ -26,7 +26,7 @@ Generate it and execute it in a Pharo VM using the following code.
 The message 'Hello from ObjVLisp', which was logged by the kernel execution is shown in the Transcript.
 
 ```Smalltalk
-objvlisp := (ObjVLispLanguage 
+objvlisp := (ObjVLispMinLanguage 
 	named: 'ObjVLisp' 
 	withEntryPoint: 'System log: ''Hello from ObjVLisp''. 
         System quit.').
