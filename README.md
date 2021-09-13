@@ -27,9 +27,9 @@ The message 'Hello from ObjVLisp', which was logged by the kernel execution is s
 
 ```Smalltalk
 objvlisp := (ObjVLispMinLanguage 
-	newWithName: 'ObjVLisp' 
-	withEntryPoint: 'System log: ''Hello from ObjVLisp''. 
-        System quit.').
+    newWithName: 'ObjVLisp' 
+    withEntryPoint: 'System log: ''Hello from ObjVLisp''. 
+        	     System quit.').
 objvlisp generate.
 objvlisp writeImage.
 objvlisp imageInDisk executeInVM.
