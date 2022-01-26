@@ -19,7 +19,10 @@ The VM Simulator is huge, so it will take a long time to load (around 20 minutes
     load ] on: Warning do: #resume.
 ```
 
-# Generating your first Kernel
+# Examples
+A good way to learn MetaL is checking existing examples. Check the class ```LanguageTest``` and its subclasses to see how different kernels are generated.
+
+# Generating your first custom Kernel
 Example Languages [LanguageMetamodels](https://github.com/carolahp/LanguageMetamodels), such as ObjVLisp and Candle are included.
 The simplest one is ObjVLisp.
 Generate it and execute it in a Pharo VM using the following code.
