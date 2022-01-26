@@ -20,11 +20,25 @@ PBBootstrapGeneric class >> baseLanguageModelLocation [
 { #category : #'instance creation' }
 PBBootstrapGeneric class >> baseLanguageModelRepository [
 	^ BaseLanguageModelRepository
+		ifNil: [ BaseLanguageModelRepository := (IceRepository registry
+				detect: [ :repo | repo name = 'KernelExplicitMetaclasses' ]) ]
 ]
 
 { #category : #'instance creation' }
 PBBootstrapGeneric class >> baseLanguageModelRepository: anIceRepository [
 	^ BaseLanguageModelRepository := anIceRepository
+]
+
+{ #category : #'instance creation' }
+PBBootstrapGeneric class >> checkoutRepositories [
+	| repos branches repoNames |
+	repoNames := #('MetaL' 'espell2' 'PBManager' 'LanguageMetamodels' 'espell' 'DebuggableASTInterpreter' 'PHANtom' 'PharoImageInspector' 'PBHybridDebugger').
+	repos := IceLibgitRepository allInstances
+		select: [ :rep | repoNames includes: rep name ].
+	branches := repos
+		collect:
+			[ :rep | (rep allBranches select: [ :branch | branch isHead ]) anyOne ].
+	branches do: #checkout
 ]
 
 { #category : #'instance creation' }
@@ -116,7 +130,7 @@ PBBootstrapGeneric >> installProcess [
 		hookSetSpecialObjectsArray: builder objectSpace backend specialObjectsArray.
 	
 	builder followForwardingPointers.
-	self inform: 'Image Generated successfully'
+	self inform: 'Image Generated successfully in memory'
 ]
 
 { #category : #'bootstrap1-stubs' }
