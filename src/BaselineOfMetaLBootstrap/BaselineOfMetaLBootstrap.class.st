@@ -20,13 +20,13 @@ BaselineOfMetaLBootstrap >> baseline: spec [
 						loads: 'core' ].
 			spec
 				baseline: 'Espell2'
-				with: [ spec repository: 'github://carolahp/espell2:v2.0' ].
+				with: [ spec repository: 'github://carolahp/espell2:v2.2' ].
 			spec
 				baseline: 'LanguageMetamodels'
-				with: [ spec repository: 'github://carolahp/LanguageMetamodels:main' ].
+				with: [ spec repository: 'github://carolahp/LanguageMetamodels:v1.0.0' ].
 			spec
 				baseline: 'PBManager'
-				with: [ spec repository: 'github://carolahp/PBManager:v2.0' ].
+				with: [ spec repository: 'github://carolahp/PBManager:v2.1' ].
 			spec package: 'MetaLBootstrap' ]
 ]
 
