@@ -12,7 +12,8 @@ MetaL is an alternative to the bootstrapper provided in the official Pharo repos
 The next code will install the bootstrapper and its dependencies (including [Espell2](https://github.com/carolahp/espell2/) and therefore the [Virtual Machine Simulator libraries](https://github.com/OpenSmalltalk/opensmalltalk-vm)).
 
 The VM Simulator is huge, so it will take a long time to load (around 15 minutes).
-<strong>You may get an Iceberg error the first time you execute the code or the image may crash, if that happens, execute the code again</strong>
+
+<strong>You may get an Iceberg error</strong> the first time you execute the code or the <strong>image may crash</strong>, if that happens, <strong>execute the code again</strong>
 
 ```Smalltalk
 [ Metacello new
