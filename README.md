@@ -13,7 +13,7 @@ The next code will install the bootstrapper and its dependencies (including [Esp
 
 The VM Simulator is huge, so it will take a long time to load (around 15 minutes).
 
-<strong>You may get an Iceberg error</strong> the first time you execute the code or the <strong>image may crash</strong>, if that happens, <strong>execute the code again</strong>
+<strong>You may get an Iceberg error</strong> the first time you execute the following code or the <strong>image may crash</strong>, if that happens, <strong>execute the code again</strong>
 
 ```Smalltalk
 [ Metacello new
