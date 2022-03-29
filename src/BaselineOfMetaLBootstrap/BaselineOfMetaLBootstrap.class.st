@@ -12,15 +12,15 @@ BaselineOfMetaLBootstrap >> baseline: spec [
 		do: [ spec postLoadDoIt: #postload:package:.
 			spec
 				baseline: 'Tonel'
-				with: [ spec repository: 'github://pharo-vcs/tonel:v1.0.13' ].
+				with: [ spec repository: 'github://pharo-vcs/tonel:v1.0.17' ].
 			spec
 				baseline: 'Hermes'
 				with: [ spec
-						repository: 'github://tesonep/hermes:v2.5.1';
+						repository: 'github://tesonep/hermes:v2.6.0';
 						loads: 'core' ].
-			spec
+			"spec
 				baseline: 'Espell2'
-				with: [ spec repository: 'github://carolahp/espell2:v2.2' ].
+				with: [ spec repository: 'github://carolahp/espell2:merge' ]."
 			spec
 				baseline: 'LanguageMetamodels'
 				with: [ spec repository: 'github://carolahp/LanguageMetamodels:v1.0.0' ].
