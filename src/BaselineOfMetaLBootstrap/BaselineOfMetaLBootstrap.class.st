@@ -18,15 +18,15 @@ BaselineOfMetaLBootstrap >> baseline: spec [
 				with: [ spec
 						repository: 'github://tesonep/hermes:v2.6.0';
 						loads: 'core' ].
-			"spec
+			spec
 				baseline: 'Espell2'
-				with: [ spec repository: 'github://carolahp/espell2:merge' ]."
+				with: [ spec repository: 'github://carolahp/espell2:Pharo10' ].
 			spec
 				baseline: 'LanguageMetamodels'
 				with: [ spec repository: 'github://carolahp/LanguageMetamodels:v1.0.0' ].
 			spec
 				baseline: 'PBManager'
-				with: [ spec repository: 'github://carolahp/PBManager:v2.1' ].
+				with: [ spec repository: 'github://carolahp/PBManager:Pharo10' ].
 			spec package: 'MetaLBootstrap' ]
 ]
 
